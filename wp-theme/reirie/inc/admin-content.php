@@ -589,12 +589,24 @@ function reirie_ajax_save() {
 		// 加えて、未来日時 + 公開希望（publish/future） なら post_status を 'future' に切替
 		// （= 予約投稿。ログイン中の管理者/編集者にだけ「公開予定」として表示するロジックは
 		// テンプレート側で実装する。）
+		//
+		// 注意：$val は <input type="datetime-local"> から来た「サイトの設定タイムゾーン
+		// （設定 → 一般 → タイムゾーン、通常は東京/JST）における壁時計時刻」であり、
+		// PHP サーバーのデフォルトタイムゾーン（多くのレンタルサーバーでは UTC）とは限らない。
+		// これを strtotime() / gmdate() でそのまま処理すると、PHPのデフォルトタイムゾーンで
+		// 解釈されてしまい、サーバーが UTC の場合は 9 時間ズレて保存される
+		// （＝ 20:00 に予約しても実際は 20:00 UTC = 翌 5:00 JST まで公開されないバグ）。
+		// そのため WordPress 標準の get_gmt_from_date() を使い、サイトのタイムゾーン設定を
+		// 正しく考慮して GMT に変換する。
 		if ( $f['type'] === 'datetime' && $val !== '' ) {
-			$ts = strtotime( $val );
-			if ( $ts ) {
-				$post_date_local = date( 'Y-m-d H:i:s', $ts );
-				$post_date_gmt   = gmdate( 'Y-m-d H:i:s', $ts );
+			// $val は既に 'Y-m-d H:i:s' 形式（サイトのローカル時刻）に正規化済み
+			$post_date_local = $val;
+			$post_date_gmt   = get_gmt_from_date( $val ); // サイトのタイムゾーン設定を考慮してGMTへ変換
 
+			// 「未来日時か」の判定も GMT ベースの実時刻同士で比較する
+			$ts_gmt = strtotime( $post_date_gmt . ' +0000' );
+
+			if ( $ts_gmt ) {
 				$update_arr = array(
 					'ID'            => $post_id,
 					'post_date'     => $post_date_local,
@@ -604,7 +616,7 @@ function reirie_ajax_save() {
 
 				// 未来日時のときは予約投稿（future）に切替（publish/future 指定時のみ）
 				// draft/pending/private はそのままユーザーの意思を尊重する
-				$is_future = ( $ts > current_time( 'timestamp', true ) + 60 ); // 1分以上未来
+				$is_future = ( $ts_gmt > time() + 60 ); // 1分以上未来
 				if ( in_array( $status, array( 'publish', 'future' ), true ) ) {
 					$update_arr['post_status'] = $is_future ? 'future' : 'publish';
 				}

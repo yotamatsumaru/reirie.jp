@@ -435,6 +435,21 @@ function reirie_dashboard_page() {
 		array( 'ok' => ! empty( $has_contact ), 'label' => 'お問い合わせページ' ),
 	);
 
+	// サイトのタイムゾーン設定チェック
+	// （予約投稿の公開日時ズレの多くは、ここが「東京」以外や未設定のまま
+	//   になっていることが原因のため、管理者が気づけるように警告表示する）
+	$reirie_tz_string = get_option( 'timezone_string' );
+	$reirie_gmt_offset = get_option( 'gmt_offset' );
+	$reirie_tz_ok = ( $reirie_tz_string === 'Asia/Tokyo' ) || ( $reirie_tz_string === '' && (float) $reirie_gmt_offset === 9.0 );
+	$reirie_tz_label = $reirie_tz_ok
+		? 'サイトのタイムゾーン設定（東京）'
+		: 'サイトのタイムゾーンが「東京」以外になっています（現在: ' . ( $reirie_tz_string !== '' ? $reirie_tz_string : 'UTC' . ( $reirie_gmt_offset >= 0 ? '+' : '' ) . $reirie_gmt_offset ) . '）。予約投稿の公開時刻がズレる原因になります';
+	$status_items[] = array(
+		'ok'   => $reirie_tz_ok,
+		'label'=> $reirie_tz_label,
+		'help' => admin_url( 'options-general.php' ),
+	);
+
 	// Missed schedule（公開予定だが時刻を過ぎている投稿）の検出
 	$reirie_cron_health = function_exists( 'reirie_cron_health_check' ) ? reirie_cron_health_check() : array( 'missed' => 0, 'missed_list' => array(), 'disabled' => false );
 	?>

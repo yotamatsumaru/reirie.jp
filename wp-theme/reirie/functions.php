@@ -7,7 +7,7 @@
 
 if ( ! defined( 'ABSPATH' ) ) exit;
 
-define( 'REIRIE_VERSION', '1.0.78' );
+define( 'REIRIE_VERSION', '1.0.79' );
 define( 'REIRIE_DIR', get_template_directory() );
 define( 'REIRIE_URI', get_template_directory_uri() );
 
