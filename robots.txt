@@ -1,0 +1,66 @@
+# robots.txt for reirie.jp
+# Last updated: 2026-07-03
+
+User-agent: *
+# 管理画面・システム領域はクロール禁止
+Disallow: /wp-admin/
+Disallow: /wp-includes/
+Disallow: /wp-content/plugins/
+Disallow: /wp-content/cache/
+Disallow: /wp-json/
+Disallow: /xmlrpc.php
+Disallow: /trackback/
+Disallow: /*/trackback/
+Disallow: /*/feed/
+Disallow: /comments/feed/
+
+# サイト内検索結果はクロール禁止
+Disallow: /?s=
+Disallow: /*?s=
+Disallow: /search/
+
+# フィルタパラメータ付きURLはクロール禁止（重複コンテンツ回避）
+Disallow: /*?year=
+Disallow: /*?month=
+Disallow: /*?cat=
+Disallow: /*?disco_
+Disallow: /*?p=
+Disallow: /*?attachment_id=
+Disallow: /*?replytocom=
+Disallow: /*?preview=
+Disallow: /*?paged=
+Disallow: /*?orderby=
+
+# カレンダーフィルタ・スケジュール絞り込みパラメータもブロック
+Disallow: /*?cal_y=
+Disallow: /*?cal_m=
+Disallow: /*?view=
+
+# RSS フィードも明示的にブロック（URL パターン網羅）
+Disallow: /feed/
+Disallow: /feed
+Disallow: /*/feed/
+Disallow: /*/feed
+Disallow: /comments/feed/
+Disallow: /category/*/feed/
+Disallow: /tag/*/feed/
+Disallow: /author/*/feed/
+
+# よく必要なリソースは明示的に許可
+Allow: /wp-admin/admin-ajax.php
+Allow: /wp-content/uploads/
+Allow: /wp-content/themes/reirie/assets/
+
+# メディア類は許可
+Allow: /*.css$
+Allow: /*.js$
+Allow: /*.png$
+Allow: /*.jpg$
+Allow: /*.jpeg$
+Allow: /*.gif$
+Allow: /*.webp$
+Allow: /*.svg$
+Allow: /*.mp4$
+
+# サイトマップの場所
+Sitemap: https://reirie.jp/wp-sitemap.xml

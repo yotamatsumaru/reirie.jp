@@ -1,0 +1,49 @@
+{
+    "key": "group_reirie_goods",
+    "title": "グッズ詳細",
+    "fields": [
+        {
+            "key": "field_goods_price",
+            "label": "価格表示",
+            "name": "goods_price",
+            "type": "text",
+            "instructions": "例: ¥3,800（記号込みで自由に入力できます）"
+        },
+        {
+            "key": "field_goods_link",
+            "label": "商品ページURL",
+            "name": "goods_link",
+            "type": "url",
+            "instructions": "公式ストア等の外部商品ページがある場合に入力"
+        },
+        {
+            "key": "field_goods_status",
+            "label": "ステータス（任意）",
+            "name": "goods_status",
+            "type": "select",
+            "choices": {
+                "": "（表示しない）",
+                "NEW": "NEW（新商品）",
+                "SOLD OUT": "SOLD OUT（完売）",
+                "COMING": "COMING SOON（販売予定）",
+                "LIMITED": "LIMITED（数量限定）"
+            },
+            "allow_null": 1,
+            "default_value": ""
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "goods"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "active": true
+}

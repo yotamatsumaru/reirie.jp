@@ -1,0 +1,58 @@
+{
+    "key": "group_reirie_schedule",
+    "title": "スケジュール詳細",
+    "fields": [
+        {
+            "key": "field_schedule_date",
+            "label": "開催日",
+            "name": "schedule_date",
+            "type": "date_picker",
+            "required": 1,
+            "display_format": "Y-m-d",
+            "return_format": "Y-m-d",
+            "first_day": 1
+        },
+        {
+            "key": "field_schedule_venue",
+            "label": "会場",
+            "name": "schedule_venue",
+            "type": "text",
+            "instructions": "例: 渋谷 TSUTAYA O-WEST"
+        },
+        {
+            "key": "field_schedule_time",
+            "label": "開場/開演",
+            "name": "schedule_time",
+            "type": "text",
+            "instructions": "例: OPEN 18:00 / START 19:00"
+        },
+        {
+            "key": "field_schedule_link",
+            "label": "詳細ページURL",
+            "name": "schedule_link",
+            "type": "url"
+        },
+        {
+            "key": "field_schedule_highlight",
+            "label": "ハイライト表示",
+            "name": "schedule_highlight",
+            "type": "true_false",
+            "instructions": "ワンマンライブ等の特別なイベントを目立たせる",
+            "ui": 1
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "schedule"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "active": true
+}

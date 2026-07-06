@@ -1,0 +1,96 @@
+{
+    "key": "group_reirie_discography",
+    "title": "作品詳細",
+    "fields": [
+        {
+            "key": "field_disco_category",
+            "label": "カテゴリー",
+            "name": "disco_category",
+            "type": "text",
+            "instructions": "例: 2nd Single / 1st Album"
+        },
+        {
+            "key": "field_disco_release_date",
+            "label": "リリース日",
+            "name": "disco_release_date",
+            "type": "date_picker",
+            "display_format": "Y-m-d",
+            "return_format": "Y-m-d"
+        },
+        {
+            "key": "field_disco_price",
+            "label": "価格（任意）",
+            "name": "disco_price",
+            "type": "text",
+            "instructions": "例: ¥1,500（税込）"
+        },
+        {
+            "key": "field_disco_tracks",
+            "label": "トラックリスト",
+            "name": "disco_tracks",
+            "type": "textarea",
+            "instructions": "1行に1曲（例: 1. Twinkle Heart）",
+            "rows": 6
+        },
+        {
+            "key": "field_disco_is_new",
+            "label": "NEWバッジ表示",
+            "name": "disco_is_new",
+            "type": "true_false",
+            "ui": 1
+        },
+        {
+            "key": "field_disco_links_tab",
+            "label": "🔗 購入・配信リンク",
+            "name": "",
+            "type": "tab",
+            "placement": "top"
+        },
+        {
+            "key": "field_disco_buy_url",
+            "label": "🛒 購入ページURL",
+            "name": "disco_buy_url",
+            "type": "url",
+            "instructions": "CDショップ・公式ストアなど"
+        },
+        {
+            "key": "field_disco_apple_url",
+            "label": "🍎 Apple Music URL",
+            "name": "disco_apple_url",
+            "type": "url"
+        },
+        {
+            "key": "field_disco_spotify_url",
+            "label": "🟢 Spotify URL",
+            "name": "disco_spotify_url",
+            "type": "url"
+        },
+        {
+            "key": "field_disco_youtube_url",
+            "label": "▶ YouTube Music URL",
+            "name": "disco_youtube_url",
+            "type": "url"
+        },
+        {
+            "key": "field_disco_linkco_url",
+            "label": "🔗 まとめリンク（linkco / Linkfire等）",
+            "name": "disco_linkco_url",
+            "type": "url",
+            "instructions": "すべての配信先をまとめるサービスのURL"
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "discography"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "active": true
+}

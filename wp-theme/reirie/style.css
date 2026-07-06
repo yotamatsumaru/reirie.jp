@@ -1,0 +1,17 @@
+/*
+Theme Name: REIRIE
+Theme URI: https://reirie-official.example.com/
+Author: REIRIE Official
+Author URI: https://reirie-official.example.com/
+Description: 2人組アイドルユニット REIRIE オフィシャルサイト用 WordPress テーマ。動画ヒーロー、パーティクル演出、News/Schedule/Discography/Movie/Profile/Goods/Contact のセクションを管理画面から更新できます。
+Version: 1.0.0
+Requires at least: 6.0
+Tested up to: 6.5
+Requires PHP: 7.4
+License: GNU General Public License v2 or later
+License URI: http://www.gnu.org/licenses/gpl-2.0.html
+Text Domain: reirie
+Tags: music, artist, idol, custom-post-type, custom-colors, full-width-template
+*/
+
+/* このファイルはテーマ識別用ヘッダーです。本体スタイルは assets/css/main.css を参照してください。 */

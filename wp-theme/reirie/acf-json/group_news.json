@@ -1,0 +1,38 @@
+{
+    "key": "group_reirie_news",
+    "title": "お知らせ詳細",
+    "fields": [
+        {
+            "key": "field_news_date",
+            "label": "掲載日",
+            "name": "news_date",
+            "type": "date_picker",
+            "instructions": "未入力の場合は投稿日が使われます",
+            "display_format": "Y-m-d",
+            "return_format": "Y-m-d",
+            "first_day": 1
+        },
+        {
+            "key": "field_news_link",
+            "label": "外部リンクURL",
+            "name": "news_link",
+            "type": "url",
+            "instructions": "外部サイトに飛ばしたい場合のみ入力"
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "news"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "instruction_placement": "label",
+    "active": true
+}

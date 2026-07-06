@@ -1,0 +1,172 @@
+{
+    "key": "group_reirie_member",
+    "title": "メンバー詳細",
+    "fields": [
+        {
+            "key": "field_member_basic_tab",
+            "label": "👯 基本情報",
+            "name": "",
+            "type": "tab",
+            "placement": "top"
+        },
+        {
+            "key": "field_member_name_jp",
+            "label": "名前（カナ）",
+            "name": "member_name_jp",
+            "type": "text",
+            "instructions": "例: レイ"
+        },
+        {
+            "key": "field_member_catch",
+            "label": "キャッチフレーズ（任意）",
+            "name": "member_catch",
+            "type": "text",
+            "instructions": "例: 太陽みたいな笑顔担当"
+        },
+        {
+            "key": "field_member_color",
+            "label": "メンバーカラー名",
+            "name": "member_color",
+            "type": "text",
+            "instructions": "例: PINK / SKY BLUE / LAVENDER"
+        },
+        {
+            "key": "field_member_color_class",
+            "label": "カラークラス",
+            "name": "member_color_class",
+            "type": "select",
+            "choices": {
+                "color-pink": "ピンク (color-pink)",
+                "color-blue": "スカイブルー (color-blue)",
+                "color-purple": "パープル (color-purple)",
+                "color-yellow": "イエロー (color-yellow)",
+                "color-green": "グリーン (color-green)"
+            },
+            "default_value": "color-pink"
+        },
+        {
+            "key": "field_member_photo_class",
+            "label": "フォト背景クラス",
+            "name": "member_photo_class",
+            "type": "select",
+            "choices": {
+                "photo-rei": "Rei スタイル（ピンク系）",
+                "photo-rie": "Rie スタイル（ブルー系）",
+                "photo-purple": "パープル系"
+            },
+            "default_value": "photo-rei"
+        },
+        {
+            "key": "field_member_initial",
+            "label": "イニシャル",
+            "name": "member_initial",
+            "type": "text",
+            "default_value": "R",
+            "maxlength": 2,
+            "instructions": "写真未設定時に表示される一文字"
+        },
+        {
+            "key": "field_member_profile_tab",
+            "label": "🌸 プロフィール詳細",
+            "name": "",
+            "type": "tab",
+            "placement": "top"
+        },
+        {
+            "key": "field_member_birthday",
+            "label": "誕生日",
+            "name": "member_birthday",
+            "type": "text",
+            "instructions": "例: 9月12日"
+        },
+        {
+            "key": "field_member_blood",
+            "label": "血液型",
+            "name": "member_blood",
+            "type": "text"
+        },
+        {
+            "key": "field_member_hometown",
+            "label": "出身地",
+            "name": "member_hometown",
+            "type": "text"
+        },
+        {
+            "key": "field_member_height",
+            "label": "身長（任意）",
+            "name": "member_height",
+            "type": "text",
+            "instructions": "例: 158cm"
+        },
+        {
+            "key": "field_member_hobby",
+            "label": "趣味",
+            "name": "member_hobby",
+            "type": "text"
+        },
+        {
+            "key": "field_member_charm",
+            "label": "チャームポイント",
+            "name": "member_charm",
+            "type": "text"
+        },
+        {
+            "key": "field_member_skill",
+            "label": "スペシャルスキル（任意）",
+            "name": "member_skill",
+            "type": "text"
+        },
+        {
+            "key": "field_member_message",
+            "label": "ファンへのメッセージ",
+            "name": "member_message",
+            "type": "textarea",
+            "rows": 4
+        },
+        {
+            "key": "field_member_sns_tab",
+            "label": "📱 SNS",
+            "name": "",
+            "type": "tab",
+            "placement": "top"
+        },
+        {
+            "key": "field_member_sns_twitter",
+            "label": "X（Twitter）URL",
+            "name": "member_sns_twitter",
+            "type": "url"
+        },
+        {
+            "key": "field_member_sns_instagram",
+            "label": "Instagram URL",
+            "name": "member_sns_instagram",
+            "type": "url"
+        },
+        {
+            "key": "field_member_sns_tiktok",
+            "label": "TikTok URL",
+            "name": "member_sns_tiktok",
+            "type": "url"
+        },
+        {
+            "key": "field_member_sns_blog",
+            "label": "ブログ / 個人サイト URL",
+            "name": "member_sns_blog",
+            "type": "url"
+        }
+    ],
+    "location": [
+        [
+            {
+                "param": "post_type",
+                "operator": "==",
+                "value": "member"
+            }
+        ]
+    ],
+    "menu_order": 0,
+    "position": "normal",
+    "style": "default",
+    "label_placement": "top",
+    "active": true
+}
