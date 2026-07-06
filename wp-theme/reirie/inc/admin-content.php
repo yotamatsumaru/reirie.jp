@@ -542,6 +542,9 @@ function reirie_ajax_save() {
 	// カスタムフィールド
 	$url_types = array( 'url' );
 	$checkbox_types = array( 'checkbox' );
+	// 「公開予定（future）」を指定したのに、公開日時が過去のため 'publish' に
+	// 自動補正された場合に true になる（下の datetime 処理ループ内で判定）。
+	$status_downgraded = false;
 	foreach ( $schema[ $cpt ]['fields'] as $f ) {
 		if ( $f['type'] === 'divider' ) continue;
 		$name = $f['name'];
@@ -616,9 +619,22 @@ function reirie_ajax_save() {
 
 				// 未来日時のときは予約投稿（future）に切替（publish/future 指定時のみ）
 				// draft/pending/private はそのままユーザーの意思を尊重する
+				//
+				// 重要：WordPress は「post_date が過去なのに post_status が future」という
+				// 組み合わせを許さない（wp_insert_post 内部で自動的に publish に補正される）。
+				// つまり管理者が「公開予定（予約投稿）」を選んでも、公開日時が過去のまま
+				// （＝日時を新しい未来の値に変更し忘れた）だと、ここで自動的に 'publish' に
+				// 戻ってしまう。これ自体は正しい仕様（過去の時刻には「予約」できないため）だが、
+				// 以前は保存後のメッセージが常に「保存しました」で、この補正が起きたことを
+				// 管理者に伝えていなかった。そのため「予約にしたのに反映されない」ように見える
+				// バグ報告につながっていた。→ 補正が発生したかどうかを $status_downgraded に
+				// 記録し、保存完了メッセージで明示的に警告する。
 				$is_future = ( $ts_gmt > time() + 60 ); // 1分以上未来
 				if ( in_array( $status, array( 'publish', 'future' ), true ) ) {
 					$update_arr['post_status'] = $is_future ? 'future' : 'publish';
+					if ( $status === 'future' && ! $is_future ) {
+						$status_downgraded = true;
+					}
 				}
 
 				// kses を一時的に外して post_date / status を更新
@@ -642,12 +658,18 @@ function reirie_ajax_save() {
 	$message = '保存しました';
 	if ( $final_status === 'future' ) {
 		$message = '公開予定として保存しました（管理者のみフロントに表示されます）';
+	} elseif ( $status_downgraded ) {
+		// 「公開予定」を選んだのに公開日時が過去だったため、WordPress の仕様上
+		// 自動的に「公開」へ戻された（過去の時刻には予約できないため）。
+		// これを明示的にユーザーへ伝える（サイレントに見えるバグの主因だったため）。
+		$message = '⚠ 公開日時が過去のため「公開」として保存しました。公開予定（予約投稿）にするには、公開日時を未来の日時に変更してください。';
 	}
 
 	wp_send_json_success( array(
-		'id'      => $post_id,
-		'status'  => $final_status,
-		'message' => $message,
+		'id'                => $post_id,
+		'status'            => $final_status,
+		'status_downgraded' => $status_downgraded,
+		'message'           => $message,
 	) );
 }
 add_action( 'wp_ajax_reirie_content_save', 'reirie_ajax_save' );

@@ -2214,6 +2214,7 @@ function reirie_dashboard_page() {
 
 			// カスタムフィールド
 			var sc = R.schema[cpt];
+			var hasPastDateWithFutureStatus = false;
 			sc.fields.forEach(function(f){
 				if (f.type === 'divider') return;
 				var el = form.querySelector('[name="' + f.name + '"]');
@@ -2222,8 +2223,31 @@ function reirie_dashboard_page() {
 					fd.append('fields[' + f.name + ']', el.checked ? '1' : '');
 				} else {
 					fd.append('fields[' + f.name + ']', el.value || '');
+					// 「公開予定（future）」を選んでいるのに、datetime 系フィールドの値が
+					// 既に過去になっている場合は事前に検知しておく（サーバーに送る前に
+					// ユーザーへ警告するため）。WordPress は過去日時での「予約」を許可せず
+					// 自動的に「公開」に補正するため、ここで気づかせないと
+					// 「予約にしたのに反映されない」ように見えてしまう。
+					if ((f.type === 'datetime' || f.type === 'date') && statusEl && statusEl.value === 'future' && el.value) {
+						var pickedTs = NaN;
+						if (f.type === 'datetime') {
+							pickedTs = new Date(el.value).getTime();
+						} else {
+							pickedTs = new Date(el.value + 'T00:00:00').getTime();
+						}
+						if (!isNaN(pickedTs) && pickedTs <= Date.now()) {
+							hasPastDateWithFutureStatus = true;
+						}
+					}
 				}
 			});
+
+			if (hasPastDateWithFutureStatus) {
+				modalSave.disabled = false;
+				modalMsg.textContent = '⚠ 「公開予定（予約投稿）」にするには、公開日時を未来の日時にしてください（現在、過去の日時が指定されています）';
+				modalMsg.className = 'reirie-modal-msg is-error';
+				return;
+			}
 
 			fetch(R.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: fd })
 				.then(function(r){ return r.json(); })
@@ -2234,7 +2258,24 @@ function reirie_dashboard_page() {
 						modalMsg.className = 'reirie-modal-msg is-error';
 						return;
 					}
-					modalMsg.textContent = '保存しました';
+
+					// 「公開予定」を選んだのに公開日時が過去だったため、サーバー側で
+					// 自動的に「公開」へ補正された場合は、はっきり警告を出してモーダルは
+					// 閉じずに留める（ユーザーが公開日時を修正できるように）。
+					// これを黙って閉じてしまうと「予約にしたのに反映されない」ように
+					// 見えてしまうため（実際に報告されたバグの原因）。
+					if (res.data && res.data.status_downgraded) {
+						modalMsg.textContent = res.data.message || '公開日時が過去のため「公開」として保存されました';
+						modalMsg.className = 'reirie-modal-msg is-error';
+						// ステータスのセレクトも実際の保存結果（publish）に同期しておく
+						if (statusEl) statusEl.value = res.data.status || 'publish';
+						// 一覧は最新状態に更新しておく（モーダルは開いたまま）
+						var cache1 = listCache[cpt] || { page: 1, search: '' };
+						loadList(cpt, cache1.page, cache1.search);
+						return;
+					}
+
+					modalMsg.textContent = res.data.message || '保存しました';
 					modalMsg.className = 'reirie-modal-msg is-success';
 					setTimeout(function(){
 						closeModal();
