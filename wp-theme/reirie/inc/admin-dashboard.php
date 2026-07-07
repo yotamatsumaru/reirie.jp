@@ -1133,9 +1133,32 @@ function reirie_dashboard_page() {
 			.reirie-modal-body .wp-editor-wrap.tmce-active .wp-editor-area,
 			.reirie-modal-body .wp-editor-wrap.html-active .wp-editor-area { background: #fff; }
 			.reirie-modal-body .wp-editor-tools { background: #faf7ff; padding: 6px 8px; border-bottom: 1px solid #efeaf7; }
+			/*
+			 * .wp-switch-editor（ビジュアル/コード タブ）は WordPress コアの
+			 * editor.min.css で margin:15px 0 0 5px; height:20px; box-sizing:content-box;
+			 * top:1px; が指定されている。これは本来、専用の細いタブバー（.wp-editor-tools）
+			 * の中にタブだけが乗る前提の値だが、このモーダルでは wp.editor.initialize() の
+			 * 実際のDOM構造上 .wp-editor-container（ツールバー+本文欄）が
+			 * .wp-editor-tools の「子」になっており（兄弟ではない）、コアの15pxという
+			 * 大きな上マージンがそのまま残ると、タブ上部に不自然に大きな空白ができる一方で
+			 * タブ下と直下の白いツールバーとの間はほぼ隙間なしになり、
+			 * タブが下にずれて詰まって見える崩れたレイアウトになっていた
+			 * （ユーザー指摘のスクリーンショットで実測確認）。
+			 * margin/height/box-sizing/line-height/topを明示的に上書きし、
+			 * 他のカスタムボタン（.reirie-insert-image-btn 等）と同じ考え方で
+			 * 内容に合わせたコンパクトな高さのピル型タブに揃える。
+			 */
 			.reirie-modal-body .wp-switch-editor {
 				background: #fff; border: 1px solid #e6e1ee; border-radius: 999px;
-				color: #6a4bb6; font-size: 11px; padding: 4px 14px; margin-right: 4px;
+				color: #6a4bb6; font-size: 11px; padding: 4px 14px;
+				margin: 0 4px 0 0 !important;
+				height: auto !important;
+				line-height: 1.4 !important;
+				box-sizing: border-box !important;
+				top: 0 !important;
+				display: inline-flex !important;
+				align-items: center !important;
+				justify-content: center !important;
 			}
 			.reirie-modal-body .wp-switch-editor:hover { background: #f6f0ff; border-color: #c9b7f0; }
 			.reirie-modal-body .mce-tinymce { box-shadow: none !important; border: none !important; }
