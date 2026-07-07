@@ -797,6 +797,23 @@ function reirie_dashboard_page() {
 				background: linear-gradient(135deg, #ff63a6 0%, #9a62f0 100%) !important;
 				color: #fff !important;
 			}
+			/* .reirie-fw-submit-bar .button-primary と同様に、WordPressコアの
+			   .wp-core-ui .button .dashicons { line-height:1.9; vertical-align:top; }
+			   が高さ40px用の値のまま残り、「○○を追加」ボタンのプラスアイコンが
+			   テキストより下にずれて見えていた不具合を修正。
+			   フォントメトリクスに依存しない固定サイズのflexボックスとして
+			   グリフ自体を中央揃えする。 */
+			.reirie-cpt-new .dashicons {
+				display: inline-flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				width: 16px !important;
+				height: 16px !important;
+				font-size: 16px !important;
+				line-height: 1 !important;
+				vertical-align: middle !important;
+				flex-shrink: 0;
+			}
 
 			.reirie-cpt-table-wrap {
 				background: #fff;
