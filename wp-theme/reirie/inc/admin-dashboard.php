@@ -988,6 +988,18 @@ function reirie_dashboard_page() {
 
 			/* ===== TinyMCE エディタ（モーダル内本文編集）===== */
 			.reirie-modal-body .reirie-fw-field-editor { margin-top: 6px; }
+			.reirie-editor-label-row {
+				display: flex; align-items: center; justify-content: space-between;
+				gap: 10px; margin-bottom: 6px; flex-wrap: wrap;
+			}
+			.reirie-editor-label-row .field-label { margin: 0; }
+			.reirie-insert-image-btn {
+				display: inline-flex; align-items: center; gap: 6px;
+				font-size: 12px !important; padding: 2px 12px !important; height: auto !important;
+				line-height: 1.8 !important; border-radius: 999px !important;
+				border-color: #d9cdf0 !important; color: #6a4bb6 !important;
+			}
+			.reirie-insert-image-btn:hover { background: #f6f0ff !important; border-color: #c9b7f0 !important; }
 			.reirie-modal-body .wp-editor-wrap {
 				border: 1px solid #e6e1ee;
 				border-radius: 12px;
@@ -2069,9 +2081,14 @@ function reirie_dashboard_page() {
 			if (sc.editor) {
 				// 専用ID（TinyMCE初期化に必要）。値はモーダル描画後に setContent で投入
 				html += '<div class="reirie-fw-field reirie-fw-field-editor">'
-					+ '<label class="field-label">本文</label>'
+					+ '<div class="reirie-editor-label-row">'
+					+   '<label class="field-label">本文</label>'
+					+   '<button type="button" class="button reirie-insert-image-btn" data-editor-insert-image>'
+					+     '<span class="dashicons dashicons-format-image" style="vertical-align:middle;font-size:16px;width:16px;height:16px;"></span> 画像を挿入'
+					+   '</button>'
+					+ '</div>'
 					+ '<textarea id="reirie-modal-content-editor" name="__content" rows="10" class="reirie-rich-editor">' + escHtml(data.content || '') + '</textarea>'
-					+ '<p class="field-desc" style="font-size:12px;color:#888;margin:6px 0 0;">改行は自動で反映されます。URLは自動でリンクになります。ツールバーで太字・リンク挿入も可能です。</p>'
+					+ '<p class="field-desc" style="font-size:12px;color:#888;margin:6px 0 0;">改行は自動で反映されます。URLは自動でリンクになります。ツールバーで太字・リンク挿入や「画像を挿入」ボタンでの画像追加も可能です。</p>'
 					+ '</div>';
 			}
 
@@ -2156,6 +2173,53 @@ function reirie_dashboard_page() {
 			if (sc.editor && !sc.readonly) {
 				initRichEditor(data.content || '');
 			}
+
+			// 本文エディタの「画像を挿入」ボタンをバインド
+			var insertImgBtn = fieldsEl.querySelector('[data-editor-insert-image]');
+			if (insertImgBtn && typeof wp !== 'undefined' && wp.media) {
+				insertImgBtn.addEventListener('click', function(e){
+					e.preventDefault();
+					insertImageIntoEditor();
+				});
+			}
+		}
+
+		/**
+		 * 本文エディタ（TinyMCE）のカーソル位置に画像を挿入する
+		 * サムネイル用の bindMediaRow とは別に、wp.media フレームを都度生成する
+		 * （本文中には複数枚挿入できるようにするため、選択のたびに新規フレームを開く）
+		 */
+		function insertImageIntoEditor(){
+			var frame = wp.media({
+				title: '本文に挿入する画像を選択',
+				button: { text: 'この画像を挿入' },
+				library: { type: 'image' },
+				multiple: false
+			});
+			frame.on('select', function(){
+				var att = frame.state().get('selection').first().toJSON();
+				var url = att.url;
+				var alt = att.alt || att.title || '';
+				var imgHtml = '<img src="' + url + '" alt="' + alt.replace(/"/g, '&quot;') + '" style="max-width:100%;height:auto;" />';
+
+				var ed = (typeof tinymce !== 'undefined') ? tinymce.get('reirie-modal-content-editor') : null;
+				if (ed && !ed.isHidden()) {
+					// TinyMCEがアクティブな場合はカーソル位置に挿入
+					ed.insertContent(imgHtml);
+				} else {
+					// プレーンtextareaにフォールバックしている場合はカーソル位置にテキスト挿入
+					var ta = document.getElementById('reirie-modal-content-editor');
+					if (ta) {
+						var start = ta.selectionStart || ta.value.length;
+						var end = ta.selectionEnd || ta.value.length;
+						ta.value = ta.value.slice(0, start) + imgHtml + ta.value.slice(end);
+						ta.focus();
+						var newPos = start + imgHtml.length;
+						ta.setSelectionRange(newPos, newPos);
+					}
+				}
+			});
+			frame.open();
 		}
 
 		/**
