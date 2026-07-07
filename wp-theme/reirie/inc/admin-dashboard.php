@@ -763,9 +763,11 @@ function reirie_dashboard_page() {
 				background: #fff;
 				border: 1px solid #ececec;
 				border-radius: 10px;
-				overflow: hidden;
+				overflow-x: auto;
+				overflow-y: hidden;
+				-webkit-overflow-scrolling: touch;
 			}
-			.reirie-cpt-table { width: 100%; border-collapse: collapse; }
+			.reirie-cpt-table { width: 100%; min-width: 560px; border-collapse: collapse; }
 			.reirie-cpt-table thead th {
 				background: #fafafa; padding: 10px 14px; text-align: left;
 				font-size: 11px; font-weight: 600; color: #888;
@@ -1046,6 +1048,152 @@ function reirie_dashboard_page() {
 			.reirie-fw-quick:hover .ic .dashicons { color: #fff; }
 			.reirie-fw-quick .tx strong { display: block; font-size: 13px; color: #1d1d1f; line-height: 1.3; }
 			.reirie-fw-quick .tx span { display: block; font-size: 11px; color: #888; margin-top: 2px; }
+
+			/* ============================================================
+			   スマートフォン対応（〜680px）
+			   このダッシュボードは #wpcontent の余白を自前で潰しているため、
+			   WordPress標準のモバイル調整に頼らず、ここで一括して対応する。
+			   ============================================================ */
+			@media (max-width: 680px) {
+				.reirie-fw-inner { padding: 12px; }
+
+				.reirie-fw-header { gap: 10px; margin-bottom: 4px; }
+				.reirie-fw-header .brand-mark { width: 34px; height: 34px; border-radius: 10px; }
+				.reirie-fw-header .brand-mark .dashicons { font-size: 18px; width: 18px; height: 18px; }
+				.reirie-fw-header h1 { font-size: 17px; }
+				.reirie-fw-lead { margin-left: 0; font-size: 12px; margin-bottom: 16px; }
+
+				/* セットアップ進捗：横スクロールできる1行チップ表示に */
+				.reirie-fw-status { padding: 10px 12px; gap: 8px; }
+				.reirie-fw-status-title { width: 100%; }
+				.reirie-fw-status-list {
+					flex-wrap: nowrap;
+					overflow-x: auto;
+					-webkit-overflow-scrolling: touch;
+					padding-bottom: 2px;
+				}
+				.reirie-fw-status-list li { flex-shrink: 0; font-size: 11px; padding: 4px 10px; }
+
+				/* サイドナビ：固定(sticky)をやめてスクロール追従の混乱を防ぐ */
+				.reirie-fw-nav { position: static; padding: 6px; }
+				.reirie-fw-nav-list a { padding: 10px 10px; font-size: 13px; }
+
+				.reirie-fw-panel { padding: 16px 14px 18px; border-radius: 10px; }
+				.reirie-fw-panel-header { flex-wrap: wrap; row-gap: 10px; padding-bottom: 12px; margin-bottom: 14px; }
+				.reirie-fw-panel-header h2 { font-size: 15px; }
+				.reirie-fw-panel-header p { font-size: 11.5px; }
+				.reirie-fw-panel-header .reirie-cpt-new {
+					margin-left: 0 !important;
+					width: 100%;
+					text-align: center;
+					justify-content: center;
+				}
+
+				/* フォーム項目は画面幅いっぱいに */
+				.reirie-fw-field input[type="text"],
+				.reirie-fw-field input[type="url"],
+				.reirie-fw-field select { max-width: 100%; }
+				.reirie-fw-field .media-preview { width: 120px; height: 78px; }
+
+				/* 保存バー：固定位置のまま縦積みにしてボタンを押しやすく */
+				.reirie-fw-submit-bar {
+					flex-direction: column;
+					align-items: stretch;
+					padding: 12px 14px;
+					gap: 8px;
+				}
+				.reirie-fw-submit-bar .hint { text-align: center; font-size: 11px; }
+				.reirie-fw-submit-bar .button-primary,
+				.reirie-members-submit-bar .button-primary { width: 100%; text-align: center; }
+				.reirie-members-submit-bar {
+					flex-direction: column;
+					align-items: stretch;
+					padding: 14px 14px;
+				}
+				.reirie-members-submit-bar .hint { text-align: center; }
+
+				/* ===== CPT 一覧：検索欄と件数を縦積みに ===== */
+				.reirie-cpt-toolbar { flex-wrap: wrap; gap: 8px; }
+				.reirie-cpt-search { flex: 1 1 100%; max-width: 100%; }
+				.reirie-cpt-count { flex: 1 1 100%; }
+
+				/* ===== CPT 一覧テーブル：カード表示に変換 =====
+				   固定幅カラムでの横崩れ・文字切れを防ぐため、
+				   thead を隠し、各行をカード化して data-label を見出しとして表示する。 */
+				.reirie-cpt-table-wrap { overflow-x: visible; border: none; background: transparent; }
+				.reirie-cpt-table { min-width: 0; width: 100%; }
+				.reirie-cpt-table thead { display: none; }
+				.reirie-cpt-table, .reirie-cpt-table tbody { display: block; width: 100%; }
+				.reirie-cpt-table tr {
+					display: block;
+					background: #fff;
+					border: 1px solid #ececec;
+					border-radius: 10px;
+					padding: 10px 12px;
+					margin: 0 0 10px;
+				}
+				.reirie-cpt-table tr.reirie-cpt-loading,
+				.reirie-cpt-table tr.reirie-cpt-empty { text-align: center; }
+				.reirie-cpt-table tbody tr:last-child { margin-bottom: 0; }
+				.reirie-cpt-table td {
+					display: flex;
+					align-items: center;
+					justify-content: space-between;
+					gap: 10px;
+					padding: 6px 0;
+					border-bottom: 1px dashed #f1f1f3;
+					font-size: 13px;
+					width: auto;
+				}
+				.reirie-cpt-table tr > td:last-child { border-bottom: none; }
+				.reirie-cpt-table td[data-label]::before {
+					content: attr(data-label);
+					flex-shrink: 0;
+					font-size: 10.5px;
+					font-weight: 700;
+					letter-spacing: 0.05em;
+					color: #999;
+					text-transform: uppercase;
+				}
+				.reirie-cpt-table .col-thumbnail {
+					justify-content: flex-start;
+					border-bottom: 1px dashed #f1f1f3;
+				}
+				.reirie-cpt-table .col-thumbnail::before { content: none; }
+				.reirie-cpt-table .col-thumbnail .row-thumb { width: 52px; height: 52px; }
+				.reirie-cpt-table .row-title { white-space: normal; word-break: break-word; text-align: right; }
+				.reirie-cpt-table .col-actions {
+					width: auto; text-align: left; white-space: normal;
+					justify-content: flex-end; flex-wrap: wrap; border-bottom: none;
+					padding-top: 8px;
+				}
+				.reirie-cpt-table .col-actions::before { content: none; }
+				.reirie-cpt-table .row-action { padding: 6px 10px; margin: 0 0 0 6px; }
+				.reirie-cpt-loading td, .reirie-cpt-empty td { display: block; text-align: center; }
+				.reirie-cpt-loading td::before, .reirie-cpt-empty td::before { content: none; }
+
+				.reirie-cpt-pagination { flex-wrap: wrap; }
+
+				/* ===== モーダル：スマホでは全画面に近い形で表示 ===== */
+				.reirie-modal-overlay { padding: 0; align-items: flex-end; }
+				.reirie-modal {
+					max-width: 100%;
+					width: 100%;
+					max-height: calc(100vh - 24px);
+					border-radius: 16px 16px 0 0;
+				}
+				.reirie-modal-header { padding: 14px 16px; }
+				.reirie-modal-title { font-size: 14px; }
+				.reirie-modal-body { padding: 14px 16px; }
+				.reirie-modal-footer { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+				.reirie-modal-delete { margin-right: 0; order: 3; width: 100%; justify-content: center; }
+				.reirie-modal-msg { width: 100%; text-align: center; margin-right: 0; }
+				.reirie-modal-footer .reirie-modal-cancel,
+				.reirie-modal-footer .button-primary { flex: 1 1 auto; }
+
+				/* Quick links */
+				.reirie-fw-quick-grid { grid-template-columns: 1fr; }
+			}
 		</style>
 
 		<div class="reirie-fw-inner">
@@ -1670,9 +1818,10 @@ function reirie_dashboard_page() {
 			else if (it.status === 'future') rowCls = 'is-scheduled';
 			var html = '<tr data-id="' + it.id + '" class="' + rowCls + '">';
 			cpt_schema.columns.forEach(function(col){
+				var lbl = escAttr(col.label || '');
 				if (col.type === 'thumbnail') {
 					var bg = it.thumbnail ? ('style="background-image:url(\'' + escAttr(it.thumbnail) + '\');"') : '';
-					html += '<td class="col-thumbnail"><span class="row-thumb" ' + bg + '>'
+					html += '<td class="col-thumbnail" data-label="' + lbl + '"><span class="row-thumb" ' + bg + '>'
 						+ (!it.thumbnail ? '<span class="dashicons dashicons-format-image"></span>' : '')
 						+ '</span></td>';
 				} else if (col.type === 'title') {
@@ -1684,14 +1833,14 @@ function reirie_dashboard_page() {
 					else if (it.status !== 'publish') statusLabel = it.status;
 					var statusBadgeCls = it.status === 'future' ? 'row-status row-status--scheduled' : 'row-status';
 					var statusBadge = statusLabel ? ' <small class="' + statusBadgeCls + '">' + statusLabel + '</small>' : '';
-					html += '<td><span class="row-title">' + escHtml(it.title) + statusBadge + '</span></td>';
+					html += '<td data-label="' + lbl + '"><span class="row-title">' + escHtml(it.title) + statusBadge + '</span></td>';
 				} else if (col.type === 'date') {
-					html += '<td>' + escHtml(it.date) + '</td>';
+					html += '<td data-label="' + lbl + '">' + escHtml(it.date) + '</td>';
 				} else if (col.type === 'menu_order') {
-					html += '<td class="col-menu_order">' + it.menu_order + '</td>';
+					html += '<td class="col-menu_order" data-label="' + lbl + '">' + it.menu_order + '</td>';
 				} else if (col.type === 'meta') {
 					var v = (it.meta && it.meta[col.key]) ? it.meta[col.key] : '';
-					html += '<td>' + escHtml(v) + '</td>';
+					html += '<td data-label="' + lbl + '">' + escHtml(v) + '</td>';
 				}
 			});
 			var readonly = cpt_schema.readonly;
@@ -2367,6 +2516,29 @@ function reirie_help_page() {
 			}
 			.reirie-help table.reirie-help-table tr:last-child td { border-bottom: none; }
 			.reirie-help table.reirie-help-table td:first-child { font-weight: 500; color: #1d1d1f; }
+
+			@media (max-width: 680px) {
+				.reirie-help-inner { padding: 14px; }
+				.reirie-fw-lead { margin-left: 0; }
+				.reirie-help table.reirie-help-table,
+				.reirie-help table.reirie-help-table thead,
+				.reirie-help table.reirie-help-table tbody,
+				.reirie-help table.reirie-help-table tr,
+				.reirie-help table.reirie-help-table td { display: block; width: 100%; }
+				.reirie-help table.reirie-help-table thead { display: none; }
+				.reirie-help table.reirie-help-table tr {
+					border: 1px solid #ececec; border-radius: 8px; margin: 0 0 10px; overflow: hidden;
+				}
+				.reirie-help table.reirie-help-table td { border-bottom: 1px dashed #f1f1f3; }
+				.reirie-help table.reirie-help-table tr:last-child td:last-child,
+				.reirie-help table.reirie-help-table td:last-child { border-bottom: none; }
+				.reirie-help table.reirie-help-table td:first-child::before {
+					content: '編集したい場所：'; display: block; font-size: 10.5px; color: #999; margin-bottom: 2px;
+				}
+				.reirie-help table.reirie-help-table td:last-child::before {
+					content: '編集メニュー：'; display: block; font-size: 10.5px; color: #999; margin-bottom: 2px;
+				}
+			}
 		</style>
 
 		<div class="reirie-help-inner reirie-help">
