@@ -74,11 +74,18 @@ function reirie_content_schema() {
 			'editor'   => true,
 			'columns'  => array(
 				array( 'key' => 'thumbnail', 'label' => '画像', 'type' => 'thumbnail' ),
-				array( 'key' => 'news_date', 'label' => '日付', 'type' => 'meta' ),
+				// 「公開日時」= news_date カスタムフィールド（未設定ならフロント表示時は
+				// 投稿の作成日時にフォールバックされる。一覧上は「未設定＝空欄」のまま
+				// 表示し、実際に指定されているかどうかが一目で分かるようにする）
+				array( 'key' => 'news_date', 'label' => '公開日時', 'type' => 'meta' ),
+				// 「作成日時」= WordPress投稿としての作成日時（post_date）。
+				// 常に値が入っているため、公開日時が未設定の投稿でも
+				// 何かしらの日時情報を確認できるようにするための列。
+				array( 'key' => 'created',   'label' => '作成日時', 'type' => 'created' ),
 				array( 'key' => 'title',     'label' => 'タイトル', 'type' => 'title' ),
 			),
 			'fields' => array(
-				array( 'name' => 'news_date', 'label' => '公開日時', 'type' => 'datetime', 'desc' => '日付と時刻を指定できます。未入力の場合は投稿日時が使われます。投稿の並び順にも影響します。' ),
+				array( 'name' => 'news_date', 'label' => '公開日時', 'type' => 'datetime', 'desc' => '日付と時刻を指定できます。未入力の場合は投稿の作成日時が使われます。投稿の並び順にも影響します。' ),
 				array( 'name' => 'news_link', 'label' => '外部リンクURL（任意）', 'type' => 'url', 'desc' => 'クリック時に外部サイトを開きたい場合のみ' ),
 			),
 		),
@@ -262,6 +269,10 @@ function reirie_ajax_list() {
 			'title'      => $p->post_title ? $p->post_title : '(無題)',
 			'status'     => $p->post_status,
 			'date'       => mysql2date( 'Y-m-d', $p->post_date ),
+			// 「作成日時」列（type:'created'）専用。投稿としてWordPressに作成された
+			// 日時（post_date）を時刻付きで返す。「公開日時」（newsのカスタムフィールド
+			// news_date 等）とは別物で、常に値が入っている。
+			'created_at' => mysql2date( 'Y-m-d H:i', $p->post_date ),
 			'menu_order' => $p->menu_order,
 			'thumbnail'  => '',
 			'permalink'  => $permalink,

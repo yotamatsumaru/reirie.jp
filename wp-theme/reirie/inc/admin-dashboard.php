@@ -2047,6 +2047,11 @@ function reirie_dashboard_page() {
 					html += '<td data-label="' + lbl + '"><span class="row-title">' + escHtml(it.title) + statusBadge + '</span></td>';
 				} else if (col.type === 'date') {
 					html += '<td data-label="' + lbl + '">' + escHtml(it.date) + '</td>';
+				} else if (col.type === 'created') {
+					// 「作成日時」= 投稿としてWordPressに作成された日時（post_date）。
+					// 「公開日時」（news_date等のカスタムフィールド）とは別軸で、
+					// 未設定になることがないため、常に何かしらの日時が表示される。
+					html += '<td data-label="' + lbl + '" style="white-space:nowrap;color:#888;font-size:12.5px;">' + escHtml(it.created_at || '') + '</td>';
 				} else if (col.type === 'menu_order') {
 					html += '<td class="col-menu_order" data-label="' + lbl + '">' + it.menu_order + '</td>';
 				} else if (col.type === 'meta') {
