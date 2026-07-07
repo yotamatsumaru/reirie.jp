@@ -732,6 +732,26 @@ function reirie_dashboard_page() {
 				min-height: 0;
 				height: auto;
 			}
+			/* WordPressコアには .wp-core-ui .button .dashicons { line-height:1.9; vertical-align:top; }
+			   というルールがあり、これは高さ40px前提のデフォルトボタン用に設計されている。
+			   本ボタンは上記で高さをコンテンツに合わせて縮めているが、アイコン側の
+			   line-height/vertical-alignはコア側の値のまま残るため、チェックマークが
+			   テキストより下（ボタン下端寄り）にずれて見える不具合があった
+			   （ユーザー指摘のスクリーンショットで実測確認）。
+			   アイコンをフォントメトリクスに依存しない固定サイズのflexボックス化し、
+			   グリフ自体を中央揃えすることで、ブラウザ・フォント差異に左右されず
+			   確実にテキストと同じ高さに揃える。 */
+			.reirie-fw-submit-bar .button-primary .dashicons {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 16px;
+				height: 16px;
+				font-size: 16px;
+				line-height: 1;
+				vertical-align: middle;
+				flex-shrink: 0;
+			}
 			.reirie-fw-submit-bar .button-primary:hover {
 				background: linear-gradient(135deg, #ff63a6 0%, #9a62f0 100%);
 				color: #fff;
