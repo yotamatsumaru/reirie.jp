@@ -1764,6 +1764,16 @@ function reirie_dashboard_page() {
 	(function(){
 		var R = window.REIRIE_ADMIN;
 		var settingsBar = document.getElementById('reirie-settings-submit-bar');
+		// 一覧読み込みで使うキャッシュ（cpt -> { page, search }）。
+		// 下の restoreActiveTab() が読み込み時点で即座に loadList() を呼ぶ可能性があるため、
+		// loadList() 本体より前に、ここで必ず初期化しておく必要がある。
+		// （以前は下の「一覧読み込み」セクションで var 宣言していたが、restoreActiveTab()
+		//   が保存済みタブ＝コンテンツタブを復元する際に loadList() を呼ぶと、この行を
+		//   まだ通過していないため listCache が undefined のままとなり
+		//   "Cannot set properties of undefined" で例外が発生、以降のスクリプトが
+		//   全て停止して「お知らせ」「スケジュール」等が永久に「読み込み中...」の
+		//   まま止まってしまう不具合が発生していた。）
+		var listCache = {};
 
 		// ===== タブ切り替え（設定タブ / CPTタブ共通） =====
 		// サイドバーは常に表示するため、フォーム自体は隠さない。
@@ -1971,7 +1981,7 @@ function reirie_dashboard_page() {
 		function escAttr(s){ return escHtml(s); }
 
 		// ===== 一覧読み込み =====
-		var listCache = {}; // cpt -> { page, search }
+		// listCache はファイル冒頭（restoreActiveTab より前）で初期化済み
 		function loadList(cpt, page, search){
 			var tbody = document.querySelector('.reirie-cpt-tbody[data-cpt="' + cpt + '"]');
 			var countEl = document.querySelector('.reirie-cpt-count[data-cpt="' + cpt + '"]');
