@@ -753,6 +753,15 @@ function reirie_dashboard_page() {
 				font-weight: 600 !important;
 				box-shadow: 0 4px 12px rgba(255,126,182,0.3) !important;
 				text-shadow: none !important;
+				/* WordPressコアの .button は min-height:40px を強制するため、
+				   padding/font-sizeだけ上書きしても縦に間延びしたボタンになる。
+				   高さも明示的に上書きして内容に合わせる。 */
+				display: inline-flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				line-height: 1.4 !important;
+				min-height: 0 !important;
+				height: auto !important;
 			}
 			.reirie-cpt-new:hover {
 				background: linear-gradient(135deg, #ff63a6 0%, #9a62f0 100%) !important;
@@ -992,14 +1001,34 @@ function reirie_dashboard_page() {
 				display: flex; align-items: center; justify-content: space-between;
 				gap: 10px; margin-bottom: 6px; flex-wrap: wrap;
 			}
-			.reirie-editor-label-row .field-label { margin: 0; }
+			/*
+			 * .reirie-fw-field label.field-label（class + type セレクタ）は
+			 * .reirie-editor-label-row .field-label（class 2つ）より詳細度が高く、
+			 * margin: 0 0 6px が優先されてラベル下に余白が残ってしまっていた。
+			 * label.field-label まで指定して詳細度を合わせ、確実に margin:0 を効かせる。
+			 */
+			.reirie-editor-label-row label.field-label { margin: 0; }
+			/*
+			 * .reirie-insert-image-btn は WordPress コアの .button クラス
+			 * （.wp-core-ui .button）を継承しており、コア側で
+			 * min-height: 40px; line-height: 2.92307692 (38px 相当) が指定されている。
+			 * 以前は padding / font-size / line-height だけを上書きしていたため、
+			 * min-height だけがコアの 40px のまま残り、中身（12px文字+16pxアイコン）に対して
+			 * 縦にかなり間延びした（実測: 高さ約40px、中身は約20px）不格好なボタンになっていた。
+			 * min-height / height を明示的に上書きしてボタン全体のサイズを内容に合わせる。
+			 */
 			.reirie-insert-image-btn {
 				display: inline-flex; align-items: center; gap: 6px;
-				font-size: 12px !important; padding: 2px 12px !important; height: auto !important;
-				line-height: 1.8 !important; border-radius: 999px !important;
+				font-size: 12px !important; padding: 3px 12px !important;
+				height: auto !important; min-height: 0 !important;
+				line-height: 1.6 !important; border-radius: 999px !important;
 				border-color: #d9cdf0 !important; color: #6a4bb6 !important;
+				vertical-align: middle;
 			}
 			.reirie-insert-image-btn:hover { background: #f6f0ff !important; border-color: #c9b7f0 !important; }
+			.reirie-insert-image-btn .dashicons {
+				line-height: 1 !important;
+			}
 			.reirie-modal-body .wp-editor-wrap {
 				border: 1px solid #e6e1ee;
 				border-radius: 12px;
