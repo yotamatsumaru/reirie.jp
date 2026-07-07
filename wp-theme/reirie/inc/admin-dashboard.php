@@ -374,7 +374,15 @@ function reirie_handle_settings_save() {
 
 	add_settings_error( 'reirie_settings', 'reirie_saved', '設定を保存しました。', 'success' );
 	set_transient( 'reirie_settings_saved', 1, 30 );
-	wp_safe_redirect( add_query_arg( array( 'page' => 'reirie-dashboard', 'saved' => '1' ), admin_url( 'admin.php' ) ) );
+
+	// 保存直前に見ていたタブをリダイレクト先URLに引き継ぎ、
+	// 保存後も同じタブが開いた状態で戻れるようにする
+	// （これが無いと、保存の度に必ず一番上のタブに戻ってしまっていた）。
+	$redirect_args = array( 'page' => 'reirie-dashboard', 'saved' => '1' );
+	if ( ! empty( $_POST['reirie_current_tab'] ) ) {
+		$redirect_args['tab'] = sanitize_key( wp_unslash( $_POST['reirie_current_tab'] ) );
+	}
+	wp_safe_redirect( add_query_arg( $redirect_args, admin_url( 'admin.php' ) ) );
 	exit;
 }
 add_action( 'admin_init', 'reirie_handle_settings_save' );
@@ -433,6 +441,21 @@ function reirie_dashboard_page() {
 		array( 'ok' => $has_news > 0, 'label' => 'News ' . $has_news . '件' ),
 		array( 'ok' => $has_disco > 0, 'label' => '作品 ' . $has_disco . '件' ),
 		array( 'ok' => ! empty( $has_contact ), 'label' => 'お問い合わせページ' ),
+	);
+
+	// サイトのタイムゾーン設定チェック
+	// （予約投稿の公開日時ズレの多くは、ここが「東京」以外や未設定のまま
+	//   になっていることが原因のため、管理者が気づけるように警告表示する）
+	$reirie_tz_string = get_option( 'timezone_string' );
+	$reirie_gmt_offset = get_option( 'gmt_offset' );
+	$reirie_tz_ok = ( $reirie_tz_string === 'Asia/Tokyo' ) || ( $reirie_tz_string === '' && (float) $reirie_gmt_offset === 9.0 );
+	$reirie_tz_label = $reirie_tz_ok
+		? 'サイトのタイムゾーン設定（東京）'
+		: 'サイトのタイムゾーンが「東京」以外になっています（現在: ' . ( $reirie_tz_string !== '' ? $reirie_tz_string : 'UTC' . ( $reirie_gmt_offset >= 0 ? '+' : '' ) . $reirie_gmt_offset ) . '）。予約投稿の公開時刻がズレる原因になります';
+	$status_items[] = array(
+		'ok'   => $reirie_tz_ok,
+		'label'=> $reirie_tz_label,
+		'help' => admin_url( 'options-general.php' ),
 	);
 
 	// Missed schedule（公開予定だが時刻を過ぎている投稿）の検出
@@ -706,6 +729,36 @@ function reirie_dashboard_page() {
 				box-shadow: 0 4px 12px rgba(255,126,182,0.35);
 				font-weight: 600;
 				text-shadow: none;
+				/* WordPressコアの .button は min-height:40px を強制するため、
+				   padding/font-sizeだけ上書きしても縦に間延びしたボタンになる
+				   （実測: border-box高さ約41px、他の同列ボタンと不揃いになっていた）。
+				   高さも明示的に上書きして内容に合わせる。 */
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				line-height: 1.4;
+				min-height: 0;
+				height: auto;
+			}
+			/* WordPressコアには .wp-core-ui .button .dashicons { line-height:1.9; vertical-align:top; }
+			   というルールがあり、これは高さ40px前提のデフォルトボタン用に設計されている。
+			   本ボタンは上記で高さをコンテンツに合わせて縮めているが、アイコン側の
+			   line-height/vertical-alignはコア側の値のまま残るため、チェックマークが
+			   テキストより下（ボタン下端寄り）にずれて見える不具合があった
+			   （ユーザー指摘のスクリーンショットで実測確認）。
+			   アイコンをフォントメトリクスに依存しない固定サイズのflexボックス化し、
+			   グリフ自体を中央揃えすることで、ブラウザ・フォント差異に左右されず
+			   確実にテキストと同じ高さに揃える。 */
+			.reirie-fw-submit-bar .button-primary .dashicons {
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				width: 16px;
+				height: 16px;
+				font-size: 16px;
+				line-height: 1;
+				vertical-align: middle;
+				flex-shrink: 0;
 			}
 			.reirie-fw-submit-bar .button-primary:hover {
 				background: linear-gradient(135deg, #ff63a6 0%, #9a62f0 100%);
@@ -738,19 +791,47 @@ function reirie_dashboard_page() {
 				font-weight: 600 !important;
 				box-shadow: 0 4px 12px rgba(255,126,182,0.3) !important;
 				text-shadow: none !important;
+				/* WordPressコアの .button は min-height:40px を強制するため、
+				   padding/font-sizeだけ上書きしても縦に間延びしたボタンになる。
+				   高さも明示的に上書きして内容に合わせる。 */
+				display: inline-flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				line-height: 1.4 !important;
+				min-height: 0 !important;
+				height: auto !important;
 			}
 			.reirie-cpt-new:hover {
 				background: linear-gradient(135deg, #ff63a6 0%, #9a62f0 100%) !important;
 				color: #fff !important;
+			}
+			/* .reirie-fw-submit-bar .button-primary と同様に、WordPressコアの
+			   .wp-core-ui .button .dashicons { line-height:1.9; vertical-align:top; }
+			   が高さ40px用の値のまま残り、「○○を追加」ボタンのプラスアイコンが
+			   テキストより下にずれて見えていた不具合を修正。
+			   フォントメトリクスに依存しない固定サイズのflexボックスとして
+			   グリフ自体を中央揃えする。 */
+			.reirie-cpt-new .dashicons {
+				display: inline-flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				width: 16px !important;
+				height: 16px !important;
+				font-size: 16px !important;
+				line-height: 1 !important;
+				vertical-align: middle !important;
+				flex-shrink: 0;
 			}
 
 			.reirie-cpt-table-wrap {
 				background: #fff;
 				border: 1px solid #ececec;
 				border-radius: 10px;
-				overflow: hidden;
+				overflow-x: auto;
+				overflow-y: hidden;
+				-webkit-overflow-scrolling: touch;
 			}
-			.reirie-cpt-table { width: 100%; border-collapse: collapse; }
+			.reirie-cpt-table { width: 100%; min-width: 560px; border-collapse: collapse; }
 			.reirie-cpt-table thead th {
 				background: #fafafa; padding: 10px 14px; text-align: left;
 				font-size: 11px; font-weight: 600; color: #888;
@@ -971,6 +1052,78 @@ function reirie_dashboard_page() {
 
 			/* ===== TinyMCE エディタ（モーダル内本文編集）===== */
 			.reirie-modal-body .reirie-fw-field-editor { margin-top: 6px; }
+			.reirie-editor-label-row {
+				display: flex; align-items: center; justify-content: space-between;
+				gap: 10px; margin-bottom: 6px; flex-wrap: wrap;
+			}
+			/*
+			 * .reirie-fw-field label.field-label（class + type セレクタ）は
+			 * .reirie-editor-label-row .field-label（class 2つ）より詳細度が高く、
+			 * margin: 0 0 6px が優先されてラベル下に余白が残ってしまっていた。
+			 * label.field-label まで指定して詳細度を合わせ、確実に margin:0 を効かせる。
+			 */
+			.reirie-editor-label-row label.field-label { margin: 0; }
+			/*
+			 * .reirie-insert-image-btn は WordPress コアの .button クラス
+			 * （.wp-core-ui .button）を継承しており、コア側で
+			 * min-height: 40px; line-height: 2.92307692 (38px 相当) が指定されている。
+			 * 以前は padding / font-size / line-height だけを上書きしていたため、
+			 * min-height だけがコアの 40px のまま残り、中身（12px文字+16pxアイコン）に対して
+			 * 縦にかなり間延びした（実測: 高さ約40px、中身は約20px）不格好なボタンになっていた。
+			 * min-height / height を明示的に上書きしてボタン全体のサイズを内容に合わせる。
+			 */
+			.reirie-insert-image-btn {
+				display: inline-flex; align-items: center; gap: 6px;
+				font-size: 12px !important; padding: 3px 12px !important;
+				height: auto !important; min-height: 0 !important;
+				line-height: 1.6 !important; border-radius: 999px !important;
+				border-color: #d9cdf0 !important; color: #6a4bb6 !important;
+				vertical-align: middle;
+			}
+			.reirie-insert-image-btn:hover { background: #f6f0ff !important; border-color: #c9b7f0 !important; }
+			.reirie-insert-image-btn .dashicons {
+				line-height: 1 !important;
+			}
+			/*
+			 * .modal-copy-url-btn（公開URL欄の「URLをコピー」ボタン）は
+			 * これまでCSSでの上書きが一切なく、WordPressコアの素の .button
+			 * （角ばった四角形、min-height:40px、line-height:2.92307692）の
+			 * ままレンダリングされていた。隣接する公開URL入力欄は
+			 * border-radius:8px の丸みを帯びたデザインなのに対し、
+			 * ボタン側は角ばった形・高さも不揃いで、アイコンも
+			 * line-height:1.9のままテキストより下にずれて見えていた。
+			 * 入力欄とデザイン・高さを揃え、アイコンも中央揃えする。
+			 */
+			.modal-copy-url-btn {
+				display: inline-flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				gap: 4px;
+				border-radius: 8px !important;
+				border-color: #dcdcdc !important;
+				color: #1d1d1f !important;
+				background: #fff !important;
+				font-size: 13px !important;
+				padding: 9px 14px !important;
+				height: auto !important;
+				min-height: 0 !important;
+				line-height: 1.2 !important;
+			}
+			.modal-copy-url-btn:hover {
+				background: #f6f0ff !important;
+				border-color: #c9b7f0 !important;
+			}
+			.modal-copy-url-btn .dashicons {
+				display: inline-flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				width: 16px !important;
+				height: 16px !important;
+				font-size: 16px !important;
+				line-height: 1 !important;
+				vertical-align: middle !important;
+				flex-shrink: 0;
+			}
 			.reirie-modal-body .wp-editor-wrap {
 				border: 1px solid #e6e1ee;
 				border-radius: 12px;
@@ -980,9 +1133,32 @@ function reirie_dashboard_page() {
 			.reirie-modal-body .wp-editor-wrap.tmce-active .wp-editor-area,
 			.reirie-modal-body .wp-editor-wrap.html-active .wp-editor-area { background: #fff; }
 			.reirie-modal-body .wp-editor-tools { background: #faf7ff; padding: 6px 8px; border-bottom: 1px solid #efeaf7; }
+			/*
+			 * .wp-switch-editor（ビジュアル/コード タブ）は WordPress コアの
+			 * editor.min.css で margin:15px 0 0 5px; height:20px; box-sizing:content-box;
+			 * top:1px; が指定されている。これは本来、専用の細いタブバー（.wp-editor-tools）
+			 * の中にタブだけが乗る前提の値だが、このモーダルでは wp.editor.initialize() の
+			 * 実際のDOM構造上 .wp-editor-container（ツールバー+本文欄）が
+			 * .wp-editor-tools の「子」になっており（兄弟ではない）、コアの15pxという
+			 * 大きな上マージンがそのまま残ると、タブ上部に不自然に大きな空白ができる一方で
+			 * タブ下と直下の白いツールバーとの間はほぼ隙間なしになり、
+			 * タブが下にずれて詰まって見える崩れたレイアウトになっていた
+			 * （ユーザー指摘のスクリーンショットで実測確認）。
+			 * margin/height/box-sizing/line-height/topを明示的に上書きし、
+			 * 他のカスタムボタン（.reirie-insert-image-btn 等）と同じ考え方で
+			 * 内容に合わせたコンパクトな高さのピル型タブに揃える。
+			 */
 			.reirie-modal-body .wp-switch-editor {
 				background: #fff; border: 1px solid #e6e1ee; border-radius: 999px;
-				color: #6a4bb6; font-size: 11px; padding: 4px 14px; margin-right: 4px;
+				color: #6a4bb6; font-size: 11px; padding: 4px 14px;
+				margin: 0 4px 0 0 !important;
+				height: auto !important;
+				line-height: 1.4 !important;
+				box-sizing: border-box !important;
+				top: 0 !important;
+				display: inline-flex !important;
+				align-items: center !important;
+				justify-content: center !important;
 			}
 			.reirie-modal-body .wp-switch-editor:hover { background: #f6f0ff; border-color: #c9b7f0; }
 			.reirie-modal-body .mce-tinymce { box-shadow: none !important; border: none !important; }
@@ -1031,6 +1207,152 @@ function reirie_dashboard_page() {
 			.reirie-fw-quick:hover .ic .dashicons { color: #fff; }
 			.reirie-fw-quick .tx strong { display: block; font-size: 13px; color: #1d1d1f; line-height: 1.3; }
 			.reirie-fw-quick .tx span { display: block; font-size: 11px; color: #888; margin-top: 2px; }
+
+			/* ============================================================
+			   スマートフォン対応（〜680px）
+			   このダッシュボードは #wpcontent の余白を自前で潰しているため、
+			   WordPress標準のモバイル調整に頼らず、ここで一括して対応する。
+			   ============================================================ */
+			@media (max-width: 680px) {
+				.reirie-fw-inner { padding: 12px; }
+
+				.reirie-fw-header { gap: 10px; margin-bottom: 4px; }
+				.reirie-fw-header .brand-mark { width: 34px; height: 34px; border-radius: 10px; }
+				.reirie-fw-header .brand-mark .dashicons { font-size: 18px; width: 18px; height: 18px; }
+				.reirie-fw-header h1 { font-size: 17px; }
+				.reirie-fw-lead { margin-left: 0; font-size: 12px; margin-bottom: 16px; }
+
+				/* セットアップ進捗：横スクロールできる1行チップ表示に */
+				.reirie-fw-status { padding: 10px 12px; gap: 8px; }
+				.reirie-fw-status-title { width: 100%; }
+				.reirie-fw-status-list {
+					flex-wrap: nowrap;
+					overflow-x: auto;
+					-webkit-overflow-scrolling: touch;
+					padding-bottom: 2px;
+				}
+				.reirie-fw-status-list li { flex-shrink: 0; font-size: 11px; padding: 4px 10px; }
+
+				/* サイドナビ：固定(sticky)をやめてスクロール追従の混乱を防ぐ */
+				.reirie-fw-nav { position: static; padding: 6px; }
+				.reirie-fw-nav-list a { padding: 10px 10px; font-size: 13px; }
+
+				.reirie-fw-panel { padding: 16px 14px 18px; border-radius: 10px; }
+				.reirie-fw-panel-header { flex-wrap: wrap; row-gap: 10px; padding-bottom: 12px; margin-bottom: 14px; }
+				.reirie-fw-panel-header h2 { font-size: 15px; }
+				.reirie-fw-panel-header p { font-size: 11.5px; }
+				.reirie-fw-panel-header .reirie-cpt-new {
+					margin-left: 0 !important;
+					width: 100%;
+					text-align: center;
+					justify-content: center;
+				}
+
+				/* フォーム項目は画面幅いっぱいに */
+				.reirie-fw-field input[type="text"],
+				.reirie-fw-field input[type="url"],
+				.reirie-fw-field select { max-width: 100%; }
+				.reirie-fw-field .media-preview { width: 120px; height: 78px; }
+
+				/* 保存バー：固定位置のまま縦積みにしてボタンを押しやすく */
+				.reirie-fw-submit-bar {
+					flex-direction: column;
+					align-items: stretch;
+					padding: 12px 14px;
+					gap: 8px;
+				}
+				.reirie-fw-submit-bar .hint { text-align: center; font-size: 11px; }
+				.reirie-fw-submit-bar .button-primary,
+				.reirie-members-submit-bar .button-primary { width: 100%; text-align: center; }
+				.reirie-members-submit-bar {
+					flex-direction: column;
+					align-items: stretch;
+					padding: 14px 14px;
+				}
+				.reirie-members-submit-bar .hint { text-align: center; }
+
+				/* ===== CPT 一覧：検索欄と件数を縦積みに ===== */
+				.reirie-cpt-toolbar { flex-wrap: wrap; gap: 8px; }
+				.reirie-cpt-search { flex: 1 1 100%; max-width: 100%; }
+				.reirie-cpt-count { flex: 1 1 100%; }
+
+				/* ===== CPT 一覧テーブル：カード表示に変換 =====
+				   固定幅カラムでの横崩れ・文字切れを防ぐため、
+				   thead を隠し、各行をカード化して data-label を見出しとして表示する。 */
+				.reirie-cpt-table-wrap { overflow-x: visible; border: none; background: transparent; }
+				.reirie-cpt-table { min-width: 0; width: 100%; }
+				.reirie-cpt-table thead { display: none; }
+				.reirie-cpt-table, .reirie-cpt-table tbody { display: block; width: 100%; }
+				.reirie-cpt-table tr {
+					display: block;
+					background: #fff;
+					border: 1px solid #ececec;
+					border-radius: 10px;
+					padding: 10px 12px;
+					margin: 0 0 10px;
+				}
+				.reirie-cpt-table tr.reirie-cpt-loading,
+				.reirie-cpt-table tr.reirie-cpt-empty { text-align: center; }
+				.reirie-cpt-table tbody tr:last-child { margin-bottom: 0; }
+				.reirie-cpt-table td {
+					display: flex;
+					align-items: center;
+					justify-content: space-between;
+					gap: 10px;
+					padding: 6px 0;
+					border-bottom: 1px dashed #f1f1f3;
+					font-size: 13px;
+					width: auto;
+				}
+				.reirie-cpt-table tr > td:last-child { border-bottom: none; }
+				.reirie-cpt-table td[data-label]::before {
+					content: attr(data-label);
+					flex-shrink: 0;
+					font-size: 10.5px;
+					font-weight: 700;
+					letter-spacing: 0.05em;
+					color: #999;
+					text-transform: uppercase;
+				}
+				.reirie-cpt-table .col-thumbnail {
+					justify-content: flex-start;
+					border-bottom: 1px dashed #f1f1f3;
+				}
+				.reirie-cpt-table .col-thumbnail::before { content: none; }
+				.reirie-cpt-table .col-thumbnail .row-thumb { width: 52px; height: 52px; }
+				.reirie-cpt-table .row-title { white-space: normal; word-break: break-word; text-align: right; }
+				.reirie-cpt-table .col-actions {
+					width: auto; text-align: left; white-space: normal;
+					justify-content: flex-end; flex-wrap: wrap; border-bottom: none;
+					padding-top: 8px;
+				}
+				.reirie-cpt-table .col-actions::before { content: none; }
+				.reirie-cpt-table .row-action { padding: 6px 10px; margin: 0 0 0 6px; }
+				.reirie-cpt-loading td, .reirie-cpt-empty td { display: block; text-align: center; }
+				.reirie-cpt-loading td::before, .reirie-cpt-empty td::before { content: none; }
+
+				.reirie-cpt-pagination { flex-wrap: wrap; }
+
+				/* ===== モーダル：スマホでは全画面に近い形で表示 ===== */
+				.reirie-modal-overlay { padding: 0; align-items: flex-end; }
+				.reirie-modal {
+					max-width: 100%;
+					width: 100%;
+					max-height: calc(100vh - 24px);
+					border-radius: 16px 16px 0 0;
+				}
+				.reirie-modal-header { padding: 14px 16px; }
+				.reirie-modal-title { font-size: 14px; }
+				.reirie-modal-body { padding: 14px 16px; }
+				.reirie-modal-footer { padding: 12px 16px; flex-wrap: wrap; gap: 8px; }
+				.reirie-modal-delete { margin-right: 0; order: 3; width: 100%; justify-content: center; }
+				.reirie-modal-msg { width: 100%; text-align: center; margin-right: 0; }
+				.reirie-modal-footer .reirie-modal-cancel,
+				.reirie-modal-footer .button-primary { flex: 1 1 auto; }
+
+				/* Quick links */
+				.reirie-fw-quick-grid { grid-template-columns: 1fr; }
+			}
 		</style>
 
 		<div class="reirie-fw-inner">
@@ -1159,6 +1481,9 @@ function reirie_dashboard_page() {
 
 			<form method="post" action="" id="reirie-settings-form" novalidate>
 				<?php wp_nonce_field( 'reirie_save_settings', 'reirie_settings_nonce' ); ?>
+				<input type="hidden" name="reirie_current_tab" id="reirie-current-tab-input" value="">
+				<!-- 保存の瞬間に表示中のタブIDをJS側から書き込み、保存後リダイレクトで同じタブに戻るために使う -->
+
 
 				<div class="reirie-fw-layout">
 
@@ -1462,6 +1787,16 @@ function reirie_dashboard_page() {
 	(function(){
 		var R = window.REIRIE_ADMIN;
 		var settingsBar = document.getElementById('reirie-settings-submit-bar');
+		// 一覧読み込みで使うキャッシュ（cpt -> { page, search }）。
+		// 下の restoreActiveTab() が読み込み時点で即座に loadList() を呼ぶ可能性があるため、
+		// loadList() 本体より前に、ここで必ず初期化しておく必要がある。
+		// （以前は下の「一覧読み込み」セクションで var 宣言していたが、restoreActiveTab()
+		//   が保存済みタブ＝コンテンツタブを復元する際に loadList() を呼ぶと、この行を
+		//   まだ通過していないため listCache が undefined のままとなり
+		//   "Cannot set properties of undefined" で例外が発生、以降のスクリプトが
+		//   全て停止して「お知らせ」「スケジュール」等が永久に「読み込み中...」の
+		//   まま止まってしまう不具合が発生していた。）
+		var listCache = {};
 
 		// ===== タブ切り替え（設定タブ / CPTタブ共通） =====
 		// サイドバーは常に表示するため、フォーム自体は隠さない。
@@ -1487,18 +1822,80 @@ function reirie_dashboard_page() {
 			window.scrollTo({ top: 0, behavior: 'smooth' });
 		}
 
+		var currentTabInput = document.getElementById('reirie-current-tab-input');
+
 		document.querySelectorAll('.reirie-fw-tab').forEach(function(tab){
 			tab.addEventListener('click', function(e){
 				e.preventDefault();
 				var target = tab.getAttribute('data-target');
 				var isCpt = tab.classList.contains('reirie-fw-cpt-tab');
+				var cpt = tab.getAttribute('data-cpt');
 				showPanel(target, isCpt);
+				saveActiveTab(target, isCpt, cpt);
 				if (isCpt) {
-					var cpt = tab.getAttribute('data-cpt');
 					loadList(cpt, 1, '');
 				}
 			});
 		});
+
+		// ===== タブ状態の保持（「すべての設定を保存する」等でページが
+		//        再読み込みされたあとも、直前まで見ていたタブに留まれるようにする） =====
+		// タブ切り替えはJSのみで行われ、これまではURLにも記録されなかったため、
+		// 保存 → サーバー側リダイレクト → ページ全体を再読み込み、という流れの中で
+		// 「今どのタブを見ていたか」という情報が失われ、常に一番上（最初）の
+		// タブに戻ってしまっていた。
+		// 対応として、
+		//   1. タブ切り替え時に hidden input（reirie_current_tab）へ書き込み、
+		//      「すべての設定を保存する」送信時にサーバーへ一緒に送る
+		//      → サーバー側は保存後のリダイレクトURLに ?tab=... として付与し直す
+		//   2. ページ読み込み時、まずURLの ?tab= を最優先で復元する
+		//      （サーバーリダイレクト直後はこれが最も信頼できる）
+		//   3. URLに無ければ localStorage に保存された最後のタブを復元する
+		//      （メンバー保存時のリダイレクトなど、他の経路で開き直した場合の保険）
+		var TAB_STORAGE_KEY = 'reirie_active_tab';
+		function saveActiveTab(target, isCpt, cptKey){
+			if (currentTabInput) currentTabInput.value = target;
+			try {
+				localStorage.setItem(TAB_STORAGE_KEY, JSON.stringify({ target: target, isCpt: isCpt, cpt: cptKey || '' }));
+			} catch (e) {}
+		}
+		function activateTabByTarget(target){
+			var tab = document.querySelector('.reirie-fw-tab[data-target="' + target + '"]');
+			if (!tab) return false;
+			var isCpt = tab.classList.contains('reirie-fw-cpt-tab');
+			var cpt = tab.getAttribute('data-cpt');
+			showPanel(target, isCpt);
+			saveActiveTab(target, isCpt, cpt);
+			if (isCpt) {
+				loadList(cpt, 1, '');
+			}
+			return true;
+		}
+		function restoreActiveTab(){
+			// 1) URLの ?tab= を最優先（サーバーリダイレクト直後の値）
+			var params = new URLSearchParams(window.location.search);
+			var urlTab = params.get('tab');
+			if (urlTab && activateTabByTarget(urlTab)) return;
+
+			// 2) localStorage に保存された最後のタブ
+			var saved = null;
+			try { saved = JSON.parse(localStorage.getItem(TAB_STORAGE_KEY) || 'null'); } catch (e) {}
+			if (saved && saved.target) activateTabByTarget(saved.target);
+		}
+		restoreActiveTab();
+
+		// 「すべての設定を保存する」フォーム送信時にも、現在アクティブなタブを
+		// hidden input へ確実に反映しておく（クリック操作を経ずに読み込み直後のまま
+		// 保存された場合でも、正しいタブ情報がサーバーへ送られるようにする保険）。
+		var settingsForm = document.getElementById('reirie-settings-form');
+		if (settingsForm) {
+			settingsForm.addEventListener('submit', function(){
+				var activeTab = document.querySelector('.reirie-fw-tab.is-active');
+				if (activeTab && currentTabInput) {
+					currentTabInput.value = activeTab.getAttribute('data-target') || '';
+				}
+			});
+		}
 
 		// ===== 設定タブのメディアアップローダー（イベント委譲） =====
 		// wp.media は <script> よりあとに読み込まれることがあるため、
@@ -1607,7 +2004,7 @@ function reirie_dashboard_page() {
 		function escAttr(s){ return escHtml(s); }
 
 		// ===== 一覧読み込み =====
-		var listCache = {}; // cpt -> { page, search }
+		// listCache はファイル冒頭（restoreActiveTab より前）で初期化済み
 		function loadList(cpt, page, search){
 			var tbody = document.querySelector('.reirie-cpt-tbody[data-cpt="' + cpt + '"]');
 			var countEl = document.querySelector('.reirie-cpt-count[data-cpt="' + cpt + '"]');
@@ -1655,9 +2052,10 @@ function reirie_dashboard_page() {
 			else if (it.status === 'future') rowCls = 'is-scheduled';
 			var html = '<tr data-id="' + it.id + '" class="' + rowCls + '">';
 			cpt_schema.columns.forEach(function(col){
+				var lbl = escAttr(col.label || '');
 				if (col.type === 'thumbnail') {
 					var bg = it.thumbnail ? ('style="background-image:url(\'' + escAttr(it.thumbnail) + '\');"') : '';
-					html += '<td class="col-thumbnail"><span class="row-thumb" ' + bg + '>'
+					html += '<td class="col-thumbnail" data-label="' + lbl + '"><span class="row-thumb" ' + bg + '>'
 						+ (!it.thumbnail ? '<span class="dashicons dashicons-format-image"></span>' : '')
 						+ '</span></td>';
 				} else if (col.type === 'title') {
@@ -1669,14 +2067,19 @@ function reirie_dashboard_page() {
 					else if (it.status !== 'publish') statusLabel = it.status;
 					var statusBadgeCls = it.status === 'future' ? 'row-status row-status--scheduled' : 'row-status';
 					var statusBadge = statusLabel ? ' <small class="' + statusBadgeCls + '">' + statusLabel + '</small>' : '';
-					html += '<td><span class="row-title">' + escHtml(it.title) + statusBadge + '</span></td>';
+					html += '<td data-label="' + lbl + '"><span class="row-title">' + escHtml(it.title) + statusBadge + '</span></td>';
 				} else if (col.type === 'date') {
-					html += '<td>' + escHtml(it.date) + '</td>';
+					html += '<td data-label="' + lbl + '">' + escHtml(it.date) + '</td>';
+				} else if (col.type === 'created') {
+					// 「作成日時」= 投稿としてWordPressに作成された日時（post_date）。
+					// 「公開日時」（news_date等のカスタムフィールド）とは別軸で、
+					// 未設定になることがないため、常に何かしらの日時が表示される。
+					html += '<td data-label="' + lbl + '" style="white-space:nowrap;color:#888;font-size:12.5px;">' + escHtml(it.created_at || '') + '</td>';
 				} else if (col.type === 'menu_order') {
-					html += '<td class="col-menu_order">' + it.menu_order + '</td>';
+					html += '<td class="col-menu_order" data-label="' + lbl + '">' + it.menu_order + '</td>';
 				} else if (col.type === 'meta') {
 					var v = (it.meta && it.meta[col.key]) ? it.meta[col.key] : '';
-					html += '<td>' + escHtml(v) + '</td>';
+					html += '<td data-label="' + lbl + '">' + escHtml(v) + '</td>';
 				}
 			});
 			var readonly = cpt_schema.readonly;
@@ -1905,9 +2308,14 @@ function reirie_dashboard_page() {
 			if (sc.editor) {
 				// 専用ID（TinyMCE初期化に必要）。値はモーダル描画後に setContent で投入
 				html += '<div class="reirie-fw-field reirie-fw-field-editor">'
-					+ '<label class="field-label">本文</label>'
+					+ '<div class="reirie-editor-label-row">'
+					+   '<label class="field-label">本文</label>'
+					+   '<button type="button" class="button reirie-insert-image-btn" data-editor-insert-image>'
+					+     '<span class="dashicons dashicons-format-image" style="vertical-align:middle;font-size:16px;width:16px;height:16px;"></span> 画像を挿入'
+					+   '</button>'
+					+ '</div>'
 					+ '<textarea id="reirie-modal-content-editor" name="__content" rows="10" class="reirie-rich-editor">' + escHtml(data.content || '') + '</textarea>'
-					+ '<p class="field-desc" style="font-size:12px;color:#888;margin:6px 0 0;">改行は自動で反映されます。URLは自動でリンクになります。ツールバーで太字・リンク挿入も可能です。</p>'
+					+ '<p class="field-desc" style="font-size:12px;color:#888;margin:6px 0 0;">改行は自動で反映されます。URLは自動でリンクになります。ツールバーで太字・リンク挿入や「画像を挿入」ボタンでの画像追加も可能です。</p>'
 					+ '</div>';
 			}
 
@@ -1992,6 +2400,53 @@ function reirie_dashboard_page() {
 			if (sc.editor && !sc.readonly) {
 				initRichEditor(data.content || '');
 			}
+
+			// 本文エディタの「画像を挿入」ボタンをバインド
+			var insertImgBtn = fieldsEl.querySelector('[data-editor-insert-image]');
+			if (insertImgBtn && typeof wp !== 'undefined' && wp.media) {
+				insertImgBtn.addEventListener('click', function(e){
+					e.preventDefault();
+					insertImageIntoEditor();
+				});
+			}
+		}
+
+		/**
+		 * 本文エディタ（TinyMCE）のカーソル位置に画像を挿入する
+		 * サムネイル用の bindMediaRow とは別に、wp.media フレームを都度生成する
+		 * （本文中には複数枚挿入できるようにするため、選択のたびに新規フレームを開く）
+		 */
+		function insertImageIntoEditor(){
+			var frame = wp.media({
+				title: '本文に挿入する画像を選択',
+				button: { text: 'この画像を挿入' },
+				library: { type: 'image' },
+				multiple: false
+			});
+			frame.on('select', function(){
+				var att = frame.state().get('selection').first().toJSON();
+				var url = att.url;
+				var alt = att.alt || att.title || '';
+				var imgHtml = '<img src="' + url + '" alt="' + alt.replace(/"/g, '&quot;') + '" style="max-width:100%;height:auto;" />';
+
+				var ed = (typeof tinymce !== 'undefined') ? tinymce.get('reirie-modal-content-editor') : null;
+				if (ed && !ed.isHidden()) {
+					// TinyMCEがアクティブな場合はカーソル位置に挿入
+					ed.insertContent(imgHtml);
+				} else {
+					// プレーンtextareaにフォールバックしている場合はカーソル位置にテキスト挿入
+					var ta = document.getElementById('reirie-modal-content-editor');
+					if (ta) {
+						var start = ta.selectionStart || ta.value.length;
+						var end = ta.selectionEnd || ta.value.length;
+						ta.value = ta.value.slice(0, start) + imgHtml + ta.value.slice(end);
+						ta.focus();
+						var newPos = start + imgHtml.length;
+						ta.setSelectionRange(newPos, newPos);
+					}
+				}
+			});
+			frame.open();
 		}
 
 		/**
@@ -2199,6 +2654,7 @@ function reirie_dashboard_page() {
 
 			// カスタムフィールド
 			var sc = R.schema[cpt];
+			var hasPastDateWithFutureStatus = false;
 			sc.fields.forEach(function(f){
 				if (f.type === 'divider') return;
 				var el = form.querySelector('[name="' + f.name + '"]');
@@ -2207,8 +2663,31 @@ function reirie_dashboard_page() {
 					fd.append('fields[' + f.name + ']', el.checked ? '1' : '');
 				} else {
 					fd.append('fields[' + f.name + ']', el.value || '');
+					// 「公開予定（future）」を選んでいるのに、datetime 系フィールドの値が
+					// 既に過去になっている場合は事前に検知しておく（サーバーに送る前に
+					// ユーザーへ警告するため）。WordPress は過去日時での「予約」を許可せず
+					// 自動的に「公開」に補正するため、ここで気づかせないと
+					// 「予約にしたのに反映されない」ように見えてしまう。
+					if ((f.type === 'datetime' || f.type === 'date') && statusEl && statusEl.value === 'future' && el.value) {
+						var pickedTs = NaN;
+						if (f.type === 'datetime') {
+							pickedTs = new Date(el.value).getTime();
+						} else {
+							pickedTs = new Date(el.value + 'T00:00:00').getTime();
+						}
+						if (!isNaN(pickedTs) && pickedTs <= Date.now()) {
+							hasPastDateWithFutureStatus = true;
+						}
+					}
 				}
 			});
+
+			if (hasPastDateWithFutureStatus) {
+				modalSave.disabled = false;
+				modalMsg.textContent = '⚠ 「公開予定（予約投稿）」にするには、公開日時を未来の日時にしてください（現在、過去の日時が指定されています）';
+				modalMsg.className = 'reirie-modal-msg is-error';
+				return;
+			}
 
 			fetch(R.ajaxUrl, { method: 'POST', credentials: 'same-origin', body: fd })
 				.then(function(r){ return r.json(); })
@@ -2219,7 +2698,24 @@ function reirie_dashboard_page() {
 						modalMsg.className = 'reirie-modal-msg is-error';
 						return;
 					}
-					modalMsg.textContent = '保存しました';
+
+					// 「公開予定」を選んだのに公開日時が過去だったため、サーバー側で
+					// 自動的に「公開」へ補正された場合は、はっきり警告を出してモーダルは
+					// 閉じずに留める（ユーザーが公開日時を修正できるように）。
+					// これを黙って閉じてしまうと「予約にしたのに反映されない」ように
+					// 見えてしまうため（実際に報告されたバグの原因）。
+					if (res.data && res.data.status_downgraded) {
+						modalMsg.textContent = res.data.message || '公開日時が過去のため「公開」として保存されました';
+						modalMsg.className = 'reirie-modal-msg is-error';
+						// ステータスのセレクトも実際の保存結果（publish）に同期しておく
+						if (statusEl) statusEl.value = res.data.status || 'publish';
+						// 一覧は最新状態に更新しておく（モーダルは開いたまま）
+						var cache1 = listCache[cpt] || { page: 1, search: '' };
+						loadList(cpt, cache1.page, cache1.search);
+						return;
+					}
+
+					modalMsg.textContent = res.data.message || '保存しました';
 					modalMsg.className = 'reirie-modal-msg is-success';
 					setTimeout(function(){
 						closeModal();
@@ -2311,6 +2807,29 @@ function reirie_help_page() {
 			}
 			.reirie-help table.reirie-help-table tr:last-child td { border-bottom: none; }
 			.reirie-help table.reirie-help-table td:first-child { font-weight: 500; color: #1d1d1f; }
+
+			@media (max-width: 680px) {
+				.reirie-help-inner { padding: 14px; }
+				.reirie-fw-lead { margin-left: 0; }
+				.reirie-help table.reirie-help-table,
+				.reirie-help table.reirie-help-table thead,
+				.reirie-help table.reirie-help-table tbody,
+				.reirie-help table.reirie-help-table tr,
+				.reirie-help table.reirie-help-table td { display: block; width: 100%; }
+				.reirie-help table.reirie-help-table thead { display: none; }
+				.reirie-help table.reirie-help-table tr {
+					border: 1px solid #ececec; border-radius: 8px; margin: 0 0 10px; overflow: hidden;
+				}
+				.reirie-help table.reirie-help-table td { border-bottom: 1px dashed #f1f1f3; }
+				.reirie-help table.reirie-help-table tr:last-child td:last-child,
+				.reirie-help table.reirie-help-table td:last-child { border-bottom: none; }
+				.reirie-help table.reirie-help-table td:first-child::before {
+					content: '編集したい場所：'; display: block; font-size: 10.5px; color: #999; margin-bottom: 2px;
+				}
+				.reirie-help table.reirie-help-table td:last-child::before {
+					content: '編集メニュー：'; display: block; font-size: 10.5px; color: #999; margin-bottom: 2px;
+				}
+			}
 		</style>
 
 		<div class="reirie-help-inner reirie-help">

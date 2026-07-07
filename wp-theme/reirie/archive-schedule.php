@@ -62,6 +62,9 @@ $query_args = array(
 	'post_status'    => 'publish',
 	'meta_key'       => 'schedule_date',
 	'orderby'        => 'meta_value',
+	// Ymd（8桁）と Y-m-d が混在した schedule_date でも正しい日付順になるよう
+	// SQL側で日付型にキャストしてから並び替える。
+	'meta_type'      => 'DATE',
 	'order'          => $order,
 );
 if ( count( $meta_query ) > 1 ) {

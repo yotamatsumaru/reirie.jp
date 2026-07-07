@@ -545,6 +545,27 @@ function reirie_render_members_panel( $cpt ) {
 	.reirie-member-card-foot .button-link:hover {
 		text-decoration: underline;
 	}
+
+	/* ============================================================
+	   スマートフォン対応（〜680px）
+	   2カラムの入力欄（誕生日/血液型、出身地/身長 等）が
+	   極端に狭くなって崩れるのを防ぐため、1カラムに積み替える。
+	   ============================================================ */
+	@media (max-width: 680px) {
+		.reirie-member-row-2col {
+			grid-template-columns: 1fr;
+			gap: 12px;
+		}
+		.reirie-member-card { padding: 16px 14px 18px; border-radius: 12px; }
+		.reirie-member-card-head {
+			margin: -6px -6px 14px;
+			flex-wrap: wrap;
+			row-gap: 6px;
+		}
+		.reirie-member-photo-preview { max-width: 160px; }
+		.reirie-member-photo-buttons { flex-wrap: wrap; }
+		.reirie-member-card-foot { flex-direction: column; gap: 8px; }
+	}
 	</style>
 
 	<script>

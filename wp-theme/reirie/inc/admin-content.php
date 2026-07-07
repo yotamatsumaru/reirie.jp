@@ -74,11 +74,18 @@ function reirie_content_schema() {
 			'editor'   => true,
 			'columns'  => array(
 				array( 'key' => 'thumbnail', 'label' => '画像', 'type' => 'thumbnail' ),
-				array( 'key' => 'news_date', 'label' => '日付', 'type' => 'meta' ),
+				// 「公開日時」= news_date カスタムフィールド（未設定ならフロント表示時は
+				// 投稿の作成日時にフォールバックされる。一覧上は「未設定＝空欄」のまま
+				// 表示し、実際に指定されているかどうかが一目で分かるようにする）
+				array( 'key' => 'news_date', 'label' => '公開日時', 'type' => 'meta' ),
+				// 「作成日時」= WordPress投稿としての作成日時（post_date）。
+				// 常に値が入っているため、公開日時が未設定の投稿でも
+				// 何かしらの日時情報を確認できるようにするための列。
+				array( 'key' => 'created',   'label' => '作成日時', 'type' => 'created' ),
 				array( 'key' => 'title',     'label' => 'タイトル', 'type' => 'title' ),
 			),
 			'fields' => array(
-				array( 'name' => 'news_date', 'label' => '公開日時', 'type' => 'datetime', 'desc' => '日付と時刻を指定できます。未入力の場合は投稿日時が使われます。投稿の並び順にも影響します。' ),
+				array( 'name' => 'news_date', 'label' => '公開日時', 'type' => 'datetime', 'desc' => '日付と時刻を指定できます。未入力の場合は投稿の作成日時が使われます。投稿の並び順にも影響します。' ),
 				array( 'name' => 'news_link', 'label' => '外部リンクURL（任意）', 'type' => 'url', 'desc' => 'クリック時に外部サイトを開きたい場合のみ' ),
 			),
 		),
@@ -262,6 +269,10 @@ function reirie_ajax_list() {
 			'title'      => $p->post_title ? $p->post_title : '(無題)',
 			'status'     => $p->post_status,
 			'date'       => mysql2date( 'Y-m-d', $p->post_date ),
+			// 「作成日時」列（type:'created'）専用。投稿としてWordPressに作成された
+			// 日時（post_date）を時刻付きで返す。「公開日時」（newsのカスタムフィールド
+			// news_date 等）とは別物で、常に値が入っている。
+			'created_at' => mysql2date( 'Y-m-d H:i', $p->post_date ),
 			'menu_order' => $p->menu_order,
 			'thumbnail'  => '',
 			'permalink'  => $permalink,
@@ -542,6 +553,9 @@ function reirie_ajax_save() {
 	// カスタムフィールド
 	$url_types = array( 'url' );
 	$checkbox_types = array( 'checkbox' );
+	// 「公開予定（future）」を指定したのに、公開日時が過去のため 'publish' に
+	// 自動補正された場合に true になる（下の datetime 処理ループ内で判定）。
+	$status_downgraded = false;
 	foreach ( $schema[ $cpt ]['fields'] as $f ) {
 		if ( $f['type'] === 'divider' ) continue;
 		$name = $f['name'];
@@ -589,12 +603,24 @@ function reirie_ajax_save() {
 		// 加えて、未来日時 + 公開希望（publish/future） なら post_status を 'future' に切替
 		// （= 予約投稿。ログイン中の管理者/編集者にだけ「公開予定」として表示するロジックは
 		// テンプレート側で実装する。）
+		//
+		// 注意：$val は <input type="datetime-local"> から来た「サイトの設定タイムゾーン
+		// （設定 → 一般 → タイムゾーン、通常は東京/JST）における壁時計時刻」であり、
+		// PHP サーバーのデフォルトタイムゾーン（多くのレンタルサーバーでは UTC）とは限らない。
+		// これを strtotime() / gmdate() でそのまま処理すると、PHPのデフォルトタイムゾーンで
+		// 解釈されてしまい、サーバーが UTC の場合は 9 時間ズレて保存される
+		// （＝ 20:00 に予約しても実際は 20:00 UTC = 翌 5:00 JST まで公開されないバグ）。
+		// そのため WordPress 標準の get_gmt_from_date() を使い、サイトのタイムゾーン設定を
+		// 正しく考慮して GMT に変換する。
 		if ( $f['type'] === 'datetime' && $val !== '' ) {
-			$ts = strtotime( $val );
-			if ( $ts ) {
-				$post_date_local = date( 'Y-m-d H:i:s', $ts );
-				$post_date_gmt   = gmdate( 'Y-m-d H:i:s', $ts );
+			// $val は既に 'Y-m-d H:i:s' 形式（サイトのローカル時刻）に正規化済み
+			$post_date_local = $val;
+			$post_date_gmt   = get_gmt_from_date( $val ); // サイトのタイムゾーン設定を考慮してGMTへ変換
 
+			// 「未来日時か」の判定も GMT ベースの実時刻同士で比較する
+			$ts_gmt = strtotime( $post_date_gmt . ' +0000' );
+
+			if ( $ts_gmt ) {
 				$update_arr = array(
 					'ID'            => $post_id,
 					'post_date'     => $post_date_local,
@@ -604,9 +630,28 @@ function reirie_ajax_save() {
 
 				// 未来日時のときは予約投稿（future）に切替（publish/future 指定時のみ）
 				// draft/pending/private はそのままユーザーの意思を尊重する
-				$is_future = ( $ts > current_time( 'timestamp', true ) + 60 ); // 1分以上未来
+				//
+				// 重要：WordPress は「post_date が過去なのに post_status が future」という
+				// 組み合わせを許さない（wp_insert_post 内部で自動的に publish に補正される）。
+				// つまり管理者が「公開予定（予約投稿）」を選んでも、公開日時が過去のまま
+				// （＝日時を新しい未来の値に変更し忘れた）だと、ここで自動的に 'publish' に
+				// 戻ってしまう。これ自体は正しい仕様（過去の時刻には「予約」できないため）だが、
+				// 以前は保存後のメッセージが常に「保存しました」で、この補正が起きたことを
+				// 管理者に伝えていなかった。そのため「予約にしたのに反映されない」ように見える
+				// バグ報告につながっていた。→ 補正が発生したかどうかを $status_downgraded に
+				// 記録し、保存完了メッセージで明示的に警告する。
+				// 注意：ここは「1分以上未来」のような猶予（バッファ）を設けてはいけない。
+				// 例えば 05:28:00 に予約したいのに保存操作が 05:27:33（27秒前）に行われた
+				// 場合、猶予を設けると「実質もう公開時刻だから」とみなして即座に 'publish' に
+				// なってしまい、「05:28 に設定したのに 05:27 の時点でもう表示されてしまう」
+				// という新たなバグを生む（実際に発生した）。現在時刻より1秒でも未来であれば
+				// 予約投稿（future）として扱い、正確に指定時刻まで待たせる。
+				$is_future = ( $ts_gmt > time() );
 				if ( in_array( $status, array( 'publish', 'future' ), true ) ) {
 					$update_arr['post_status'] = $is_future ? 'future' : 'publish';
+					if ( $status === 'future' && ! $is_future ) {
+						$status_downgraded = true;
+					}
 				}
 
 				// kses を一時的に外して post_date / status を更新
@@ -630,12 +675,18 @@ function reirie_ajax_save() {
 	$message = '保存しました';
 	if ( $final_status === 'future' ) {
 		$message = '公開予定として保存しました（管理者のみフロントに表示されます）';
+	} elseif ( $status_downgraded ) {
+		// 「公開予定」を選んだのに公開日時が過去だったため、WordPress の仕様上
+		// 自動的に「公開」へ戻された（過去の時刻には予約できないため）。
+		// これを明示的にユーザーへ伝える（サイレントに見えるバグの主因だったため）。
+		$message = '⚠ 公開日時が過去のため「公開」として保存しました。公開予定（予約投稿）にするには、公開日時を未来の日時に変更してください。';
 	}
 
 	wp_send_json_success( array(
-		'id'      => $post_id,
-		'status'  => $final_status,
-		'message' => $message,
+		'id'                => $post_id,
+		'status'            => $final_status,
+		'status_downgraded' => $status_downgraded,
+		'message'           => $message,
 	) );
 }
 add_action( 'wp_ajax_reirie_content_save', 'reirie_ajax_save' );

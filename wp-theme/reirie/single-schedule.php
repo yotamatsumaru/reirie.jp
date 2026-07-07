@@ -38,6 +38,9 @@ get_header(); ?>
 			'post__not_in'   => array( get_the_ID() ),
 			'meta_key'       => 'schedule_date',
 			'orderby'        => 'meta_value',
+			// Ymd（8桁）と Y-m-d が混在した schedule_date でも正しい日付順になるよう
+			// SQL側で日付型にキャストしてから並び替える。
+			'meta_type'      => 'DATE',
 		);
 
 		$prev_q = new WP_Query( array_merge( $adjacent_args, array(
