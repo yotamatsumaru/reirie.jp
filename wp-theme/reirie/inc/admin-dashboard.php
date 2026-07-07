@@ -374,7 +374,15 @@ function reirie_handle_settings_save() {
 
 	add_settings_error( 'reirie_settings', 'reirie_saved', '設定を保存しました。', 'success' );
 	set_transient( 'reirie_settings_saved', 1, 30 );
-	wp_safe_redirect( add_query_arg( array( 'page' => 'reirie-dashboard', 'saved' => '1' ), admin_url( 'admin.php' ) ) );
+
+	// 保存直前に見ていたタブをリダイレクト先URLに引き継ぎ、
+	// 保存後も同じタブが開いた状態で戻れるようにする
+	// （これが無いと、保存の度に必ず一番上のタブに戻ってしまっていた）。
+	$redirect_args = array( 'page' => 'reirie-dashboard', 'saved' => '1' );
+	if ( ! empty( $_POST['reirie_current_tab'] ) ) {
+		$redirect_args['tab'] = sanitize_key( wp_unslash( $_POST['reirie_current_tab'] ) );
+	}
+	wp_safe_redirect( add_query_arg( $redirect_args, admin_url( 'admin.php' ) ) );
 	exit;
 }
 add_action( 'admin_init', 'reirie_handle_settings_save' );
@@ -1450,6 +1458,9 @@ function reirie_dashboard_page() {
 
 			<form method="post" action="" id="reirie-settings-form" novalidate>
 				<?php wp_nonce_field( 'reirie_save_settings', 'reirie_settings_nonce' ); ?>
+				<input type="hidden" name="reirie_current_tab" id="reirie-current-tab-input" value="">
+				<!-- 保存の瞬間に表示中のタブIDをJS側から書き込み、保存後リダイレクトで同じタブに戻るために使う -->
+
 
 				<div class="reirie-fw-layout">
 
@@ -1778,18 +1789,80 @@ function reirie_dashboard_page() {
 			window.scrollTo({ top: 0, behavior: 'smooth' });
 		}
 
+		var currentTabInput = document.getElementById('reirie-current-tab-input');
+
 		document.querySelectorAll('.reirie-fw-tab').forEach(function(tab){
 			tab.addEventListener('click', function(e){
 				e.preventDefault();
 				var target = tab.getAttribute('data-target');
 				var isCpt = tab.classList.contains('reirie-fw-cpt-tab');
+				var cpt = tab.getAttribute('data-cpt');
 				showPanel(target, isCpt);
+				saveActiveTab(target, isCpt, cpt);
 				if (isCpt) {
-					var cpt = tab.getAttribute('data-cpt');
 					loadList(cpt, 1, '');
 				}
 			});
 		});
+
+		// ===== タブ状態の保持（「すべての設定を保存する」等でページが
+		//        再読み込みされたあとも、直前まで見ていたタブに留まれるようにする） =====
+		// タブ切り替えはJSのみで行われ、これまではURLにも記録されなかったため、
+		// 保存 → サーバー側リダイレクト → ページ全体を再読み込み、という流れの中で
+		// 「今どのタブを見ていたか」という情報が失われ、常に一番上（最初）の
+		// タブに戻ってしまっていた。
+		// 対応として、
+		//   1. タブ切り替え時に hidden input（reirie_current_tab）へ書き込み、
+		//      「すべての設定を保存する」送信時にサーバーへ一緒に送る
+		//      → サーバー側は保存後のリダイレクトURLに ?tab=... として付与し直す
+		//   2. ページ読み込み時、まずURLの ?tab= を最優先で復元する
+		//      （サーバーリダイレクト直後はこれが最も信頼できる）
+		//   3. URLに無ければ localStorage に保存された最後のタブを復元する
+		//      （メンバー保存時のリダイレクトなど、他の経路で開き直した場合の保険）
+		var TAB_STORAGE_KEY = 'reirie_active_tab';
+		function saveActiveTab(target, isCpt, cptKey){
+			if (currentTabInput) currentTabInput.value = target;
+			try {
+				localStorage.setItem(TAB_STORAGE_KEY, JSON.stringify({ target: target, isCpt: isCpt, cpt: cptKey || '' }));
+			} catch (e) {}
+		}
+		function activateTabByTarget(target){
+			var tab = document.querySelector('.reirie-fw-tab[data-target="' + target + '"]');
+			if (!tab) return false;
+			var isCpt = tab.classList.contains('reirie-fw-cpt-tab');
+			var cpt = tab.getAttribute('data-cpt');
+			showPanel(target, isCpt);
+			saveActiveTab(target, isCpt, cpt);
+			if (isCpt) {
+				loadList(cpt, 1, '');
+			}
+			return true;
+		}
+		function restoreActiveTab(){
+			// 1) URLの ?tab= を最優先（サーバーリダイレクト直後の値）
+			var params = new URLSearchParams(window.location.search);
+			var urlTab = params.get('tab');
+			if (urlTab && activateTabByTarget(urlTab)) return;
+
+			// 2) localStorage に保存された最後のタブ
+			var saved = null;
+			try { saved = JSON.parse(localStorage.getItem(TAB_STORAGE_KEY) || 'null'); } catch (e) {}
+			if (saved && saved.target) activateTabByTarget(saved.target);
+		}
+		restoreActiveTab();
+
+		// 「すべての設定を保存する」フォーム送信時にも、現在アクティブなタブを
+		// hidden input へ確実に反映しておく（クリック操作を経ずに読み込み直後のまま
+		// 保存された場合でも、正しいタブ情報がサーバーへ送られるようにする保険）。
+		var settingsForm = document.getElementById('reirie-settings-form');
+		if (settingsForm) {
+			settingsForm.addEventListener('submit', function(){
+				var activeTab = document.querySelector('.reirie-fw-tab.is-active');
+				if (activeTab && currentTabInput) {
+					currentTabInput.value = activeTab.getAttribute('data-target') || '';
+				}
+			});
+		}
 
 		// ===== 設定タブのメディアアップローダー（イベント委譲） =====
 		// wp.media は <script> よりあとに読み込まれることがあるため、
