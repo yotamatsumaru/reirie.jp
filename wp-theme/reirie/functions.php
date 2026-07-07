@@ -180,6 +180,7 @@ require_once REIRIE_DIR . '/inc/legal-pages.php';
 require_once REIRIE_DIR . '/inc/admin-members.php';
 require_once REIRIE_DIR . '/inc/ajax-schedule.php';
 require_once REIRIE_DIR . '/inc/numeric-slugs.php';
+require_once REIRIE_DIR . '/inc/db-backup.php';
 
 /* ==========================================================
    ACF JSON の保存先 / 読み込み元（テーマ内で同期）
