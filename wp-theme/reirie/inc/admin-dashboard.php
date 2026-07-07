@@ -1076,6 +1076,46 @@ function reirie_dashboard_page() {
 			.reirie-insert-image-btn .dashicons {
 				line-height: 1 !important;
 			}
+			/*
+			 * .modal-copy-url-btn（公開URL欄の「URLをコピー」ボタン）は
+			 * これまでCSSでの上書きが一切なく、WordPressコアの素の .button
+			 * （角ばった四角形、min-height:40px、line-height:2.92307692）の
+			 * ままレンダリングされていた。隣接する公開URL入力欄は
+			 * border-radius:8px の丸みを帯びたデザインなのに対し、
+			 * ボタン側は角ばった形・高さも不揃いで、アイコンも
+			 * line-height:1.9のままテキストより下にずれて見えていた。
+			 * 入力欄とデザイン・高さを揃え、アイコンも中央揃えする。
+			 */
+			.modal-copy-url-btn {
+				display: inline-flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				gap: 4px;
+				border-radius: 8px !important;
+				border-color: #dcdcdc !important;
+				color: #1d1d1f !important;
+				background: #fff !important;
+				font-size: 13px !important;
+				padding: 9px 14px !important;
+				height: auto !important;
+				min-height: 0 !important;
+				line-height: 1.2 !important;
+			}
+			.modal-copy-url-btn:hover {
+				background: #f6f0ff !important;
+				border-color: #c9b7f0 !important;
+			}
+			.modal-copy-url-btn .dashicons {
+				display: inline-flex !important;
+				align-items: center !important;
+				justify-content: center !important;
+				width: 16px !important;
+				height: 16px !important;
+				font-size: 16px !important;
+				line-height: 1 !important;
+				vertical-align: middle !important;
+				flex-shrink: 0;
+			}
 			.reirie-modal-body .wp-editor-wrap {
 				border: 1px solid #e6e1ee;
 				border-radius: 12px;
