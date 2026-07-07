@@ -41,6 +41,9 @@ $args = array(
 	'post_status'    => 'publish',
 	'meta_key'       => 'disco_release_date',
 	'orderby'        => 'meta_value',
+	// schedule_date と同様、Ymd（8桁）/ Y-m-d が混在しても正しい日付順になるよう
+	// SQL側で日付型にキャストしてから並び替える（将来の混在データに備えた予防対応）。
+	'meta_type'      => 'DATE',
 	'order'          => 'DESC',
 );
 if ( count( $meta_query ) > 1 ) {

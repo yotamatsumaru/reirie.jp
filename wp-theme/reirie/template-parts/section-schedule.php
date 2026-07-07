@@ -14,6 +14,11 @@ $list_query = new WP_Query( array(
 	'post_status'    => 'publish',
 	'meta_key'       => 'schedule_date',
 	'orderby'        => 'meta_value',
+	// meta_type => 'DATE' を指定し、SQL側で CAST(... AS DATE) してから比較・並び替えする。
+	// これにより「Ymd（8桁, 例:20260711）」と「Y-m-d（例:2026-08-22）」が混在していても、
+	// 文字列としての比較（'-' が数字より ASCII 順で小さいため 2026-08-22 が 20260711 より
+	// 前に並んでしまう）ではなく、正しい日付の大小関係で並び替えられる。
+	'meta_type'      => 'DATE',
 	'order'          => 'ASC',
 	'meta_query'     => array(
 		array(
