@@ -721,6 +721,16 @@ function reirie_dashboard_page() {
 				box-shadow: 0 4px 12px rgba(255,126,182,0.35);
 				font-weight: 600;
 				text-shadow: none;
+				/* WordPressコアの .button は min-height:40px を強制するため、
+				   padding/font-sizeだけ上書きしても縦に間延びしたボタンになる
+				   （実測: border-box高さ約41px、他の同列ボタンと不揃いになっていた）。
+				   高さも明示的に上書きして内容に合わせる。 */
+				display: inline-flex;
+				align-items: center;
+				justify-content: center;
+				line-height: 1.4;
+				min-height: 0;
+				height: auto;
 			}
 			.reirie-fw-submit-bar .button-primary:hover {
 				background: linear-gradient(135deg, #ff63a6 0%, #9a62f0 100%);
